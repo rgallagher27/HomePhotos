@@ -2,25 +2,26 @@
 
 ## Overview
 
-HomePhotos exposes a RESTful JSON API under `/api/v1/`. All endpoints require Clerk JWT authentication unless explicitly noted otherwise (the health check endpoint is the sole exception). The API follows standard HTTP semantics: `GET` for retrieval, `POST` for creation and actions, `PUT` for updates, and `DELETE` for removal.
+HomePhotos exposes a RESTful JSON API under `/api/v1/`. All endpoints require JWT authentication unless explicitly noted otherwise (the health check, login, and registration endpoints are exceptions). The API follows standard HTTP semantics: `GET` for retrieval, `POST` for creation and actions, `PUT` for updates, and `DELETE` for removal.
 
 ---
 
 ## Authentication
 
-Every request (except `GET /api/v1/health`) must include a valid Clerk session JWT. The token can be provided in two ways:
+Every request (except `GET /api/v1/health`, `POST /api/v1/auth/login`, and `POST /api/v1/auth/register`) must include a valid JWT in the `Authorization` header:
 
 | Method | Format |
 |---|---|
-| Authorization header | `Authorization: Bearer <clerk_session_jwt>` |
-| Clerk session cookie | Automatically set by the Clerk frontend SDK |
+| Authorization header | `Authorization: Bearer <jwt_token>` |
+
+Users obtain a JWT by logging in with their username and password via `POST /api/v1/auth/login`.
 
 ### Backend verification flow
 
-1. Backend middleware extracts the JWT from the header or cookie.
-2. The token is verified using the Clerk Go SDK or by fetching the JWKS endpoint and validating the signature locally.
-3. On success, the middleware extracts the `clerk_user_id` from the token claims.
-4. The `clerk_user_id` is looked up in the local `users` table to resolve the user's role (`admin` or `viewer`).
+1. Backend middleware extracts the JWT from the `Authorization` header.
+2. The token signature is verified using HMAC-SHA256 with the server-side secret (`HOMEPHOTOS_JWT_SECRET`).
+3. The token's expiration is checked; expired tokens are rejected.
+4. On success, the middleware extracts the user ID and role from the token claims.
 5. The authenticated user context is attached to the request for downstream handlers.
 
 ### Error responses
@@ -118,6 +119,63 @@ Filters are combined with AND logic: specifying both `tags` and `date_from` retu
 
 ### Auth
 
+#### `POST /api/v1/auth/register`
+
+Create a new user account. Returns a JWT so the user is signed in immediately.
+
+**Authentication:** None required
+
+**Request body**
+
+```json
+{
+  "username": "jane",
+  "password": "correct-horse-battery-staple",
+  "email": "jane@example.com"
+}
+```
+
+**Response** `201 Created`
+
+```json
+{
+  "id": 1,
+  "username": "jane",
+  "role": "admin",
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+The first registered user receives the `admin` role. Registration returns `403 Forbidden` when `HOMEPHOTOS_REGISTRATION_OPEN` is `false`.
+
+#### `POST /api/v1/auth/login`
+
+Authenticate with username and password. Returns a JWT on success.
+
+**Authentication:** None required
+
+**Request body**
+
+```json
+{
+  "username": "jane",
+  "password": "correct-horse-battery-staple"
+}
+```
+
+**Response** `200 OK`
+
+```json
+{
+  "id": 1,
+  "username": "jane",
+  "role": "admin",
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+Returns `401 Unauthorized` for invalid credentials (same error for bad username and bad password to prevent user enumeration).
+
 #### `GET /api/v1/auth/me`
 
 Returns the currently authenticated user's profile information.
@@ -127,7 +185,7 @@ Returns the currently authenticated user's profile information.
 ```json
 {
   "id": 1,
-  "clerk_user_id": "user_2xAbCdEfGhIjKl",
+  "username": "jane",
   "role": "admin",
   "display_name": "Jane Doe",
   "email": "jane@example.com"
@@ -149,14 +207,14 @@ List all registered users.
   "data": [
     {
       "id": 1,
-      "clerk_user_id": "user_2xAbCdEfGhIjKl",
+      "username": "jane",
       "role": "admin",
       "display_name": "Jane Doe",
       "email": "jane@example.com"
     },
     {
       "id": 2,
-      "clerk_user_id": "user_3yMnOpQrStUvWx",
+      "username": "john",
       "role": "viewer",
       "display_name": "John Doe",
       "email": "john@example.com"
@@ -184,7 +242,7 @@ Valid values: `"admin"`, `"viewer"`.
 ```json
 {
   "id": 2,
-  "clerk_user_id": "user_3yMnOpQrStUvWx",
+  "username": "john",
   "role": "admin",
   "display_name": "John Doe",
   "email": "john@example.com"

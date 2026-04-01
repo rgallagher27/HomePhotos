@@ -2,7 +2,7 @@
 
 ## Overview
 
-HomePhotos is deployed as a Docker Compose stack on the home network. The application reads photos from a TrueNAS SMB share mounted on the Docker host, stores metadata in a SQLite database, and uses Clerk for authentication. Remote access is provided through Tailscale.
+HomePhotos is deployed as a Docker Compose stack on the home network. The application reads photos from a TrueNAS SMB share mounted on the Docker host, stores metadata in a SQLite database, and uses built-in username/password authentication with JWT tokens. Remote access is provided through Tailscale.
 
 ---
 
@@ -13,7 +13,6 @@ Before deploying HomePhotos, ensure the following are in place:
 - **TrueNAS with SMB share** configured and accessible from the Docker host. The share should contain your photo library.
 - **Docker and Docker Compose** installed on the host machine (Docker Engine 20.10+ and Compose V2 recommended).
 - **Tailscale** installed and configured on the host for secure remote access without exposing ports to the public internet.
-- **Clerk account** for authentication. The free tier is sufficient for family use.
 
 ---
 
@@ -40,8 +39,8 @@ services:
       - HOMEPHOTOS_CACHE_PATH=/cache
       - HOMEPHOTOS_DB_PATH=/data/homephotos.db
       - HOMEPHOTOS_LISTEN_ADDR=:8080
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - HOMEPHOTOS_JWT_SECRET=${HOMEPHOTOS_JWT_SECRET}
+      # - HOMEPHOTOS_REGISTRATION_OPEN=true
       # Optional: Lightroom integration
       # - HOMEPHOTOS_LRCAT_PATH=/source/.lightroom/catalog.lrcat
       # - HOMEPHOTOS_LR_PATH_MAP={"D:\\Photos": "/source"}
@@ -56,7 +55,7 @@ volumes:
 
 - The source volume is mounted **read-only** (`:ro`). HomePhotos never modifies your original photos.
 - The cache and database volumes are named Docker volumes, persisting across container restarts and upgrades.
-- Clerk keys are loaded from a `.env` file via Docker Compose variable substitution (see [Clerk Setup](#clerk-setup) below).
+- The JWT secret is loaded from a `.env` file via Docker Compose variable substitution.
 - Lightroom environment variables are commented out by default. Uncomment them if you have a Lightroom Classic catalog accessible on the SMB share.
 
 ---
@@ -125,29 +124,20 @@ The Docker host must mount the TrueNAS SMB share so the container can access the
 
 ---
 
-## Clerk Setup
+## JWT Secret Setup
 
-Clerk provides authentication so family members can sign in without you managing passwords.
+HomePhotos requires a secret key for signing and verifying JWT tokens.
 
-1. **Create a Clerk application** at [clerk.com](https://clerk.com). Choose a sign-in method that works for your family (email, Google, etc.).
-
-2. **Note the API keys** from the Clerk dashboard:
-   - **Publishable Key** (starts with `pk_live_` or `pk_test_`)
-   - **Secret Key** (starts with `sk_live_` or `sk_test_`)
-
-3. **Configure allowed origins** in the Clerk dashboard under your application settings. Add your Tailscale hostname:
-
-   ```
-   http://homephotos.tailnet-name.ts.net:8080
-   ```
-
-   If you also access HomePhotos on the local network, add that origin too (e.g., `http://192.168.1.50:8080`).
-
-4. **Create a `.env` file** in the same directory as `docker-compose.yml`:
+1. **Generate a strong random secret**:
 
    ```bash
-   CLERK_SECRET_KEY=sk_live_xxxxxxxxxxxxxxxxxxxx
-   CLERK_PUBLISHABLE_KEY=pk_live_xxxxxxxxxxxxxxxxxxxx
+   openssl rand -base64 32
+   ```
+
+2. **Create a `.env` file** in the same directory as `docker-compose.yml`:
+
+   ```bash
+   HOMEPHOTOS_JWT_SECRET=your-generated-secret-here
    ```
 
    **Never commit this file to version control.** Ensure `.env` is listed in your `.gitignore`.
@@ -160,7 +150,7 @@ Follow these steps to get HomePhotos running for the first time:
 
 1. **Mount the SMB share** on the Docker host (see [SMB Mount](#smb-mount) above). Verify with `ls /mnt/photos`.
 
-2. **Create the `.env` file** with your Clerk keys (see [Clerk Setup](#clerk-setup) above).
+2. **Create the `.env` file** with your JWT secret (see [JWT Secret Setup](#jwt-secret-setup) above).
 
 3. **Start the stack**:
 
@@ -178,7 +168,7 @@ Follow these steps to get HomePhotos running for the first time:
 
    Replace `hostname` with your Docker host's IP, local hostname, or Tailscale hostname.
 
-5. **Sign in via Clerk**. The first user to sign in is automatically granted the `admin` role.
+5. **Register the first account**. Navigate to the registration page and create your account. The first user to register is automatically granted the `admin` role.
 
 6. **Start the initial scan**. Go to **Admin > Scanner > Start Scan** in the UI, or trigger it via the API:
 
@@ -201,8 +191,8 @@ All configuration is provided via environment variables.
 | `HOMEPHOTOS_CACHE_PATH` | Path to the cache directory for generated thumbnails and previews. | `/cache` | Yes |
 | `HOMEPHOTOS_DB_PATH` | Path to the SQLite database file. | `/data/homephotos.db` | Yes |
 | `HOMEPHOTOS_LISTEN_ADDR` | Address and port the server listens on. | `:8080` | No |
-| `CLERK_SECRET_KEY` | Clerk backend secret key for JWT verification. | _(none)_ | Yes |
-| `CLERK_PUBLISHABLE_KEY` | Clerk frontend publishable key, served to the SvelteKit frontend. | _(none)_ | Yes |
+| `HOMEPHOTOS_JWT_SECRET` | Secret key used to sign and verify JWT tokens. Must be a strong random string. | _(none)_ | Yes |
+| `HOMEPHOTOS_REGISTRATION_OPEN` | Whether new user registration is allowed. Set to `false` to prevent new signups. | `true` | No |
 | `HOMEPHOTOS_LRCAT_PATH` | Path to the Lightroom Classic `.lrcat` catalog file. Enables the Lightroom integration. | _(none)_ | No |
 | `HOMEPHOTOS_LR_PATH_MAP` | JSON object mapping Lightroom catalog paths to container paths (e.g., `{"D:\\Photos": "/source"}`). Required if `HOMEPHOTOS_LRCAT_PATH` is set. | _(none)_ | No |
 | `HOMEPHOTOS_LOG_LEVEL` | Logging verbosity. Values: `debug`, `info`, `warn`, `error`. | `info` | No |
@@ -279,15 +269,14 @@ docker compose up -d
 4. If a specific file fails, it may be a corrupted or unsupported RAW format. Check the scanner error count and logs for the file path.
 5. Try increasing the number of cache workers via `HOMEPHOTOS_CACHE_WORKERS` if generation is slow but not erroring.
 
-### Clerk authentication issues
+### Authentication issues
 
-**Symptoms**: Users cannot sign in, the UI shows authentication errors, or API calls return `401 Unauthorized` even with a valid session.
+**Symptoms**: Users cannot sign in, API calls return `401 Unauthorized`, or JWT errors appear in logs.
 
 **Steps to resolve**:
 
-1. Verify your keys in `.env` match the keys in the Clerk dashboard. Ensure there are no trailing spaces or newlines.
-2. Check **allowed origins** in the Clerk dashboard. Your Tailscale hostname (including port) must be listed exactly as it appears in the browser address bar.
-3. Check for CORS errors in the browser developer console. If you see CORS-related messages, the origin is not allowed in Clerk.
-4. Ensure the container can reach the internet to verify JWTs against Clerk's JWKS endpoint. Test from inside the container: `docker compose exec homephotos wget -q -O- https://api.clerk.com`
-5. If using `pk_test_` / `sk_test_` keys, make sure you are not mixing test and production keys.
-6. Check container logs for JWT verification errors: `docker compose logs homephotos | grep -i "clerk\|jwt\|auth"`
+1. Verify `HOMEPHOTOS_JWT_SECRET` is set in your `.env` file and has no trailing spaces or newlines.
+2. Ensure the secret has not changed since users last logged in. Changing the secret invalidates all existing tokens -- users will need to log in again.
+3. Check container logs for JWT verification errors: `docker compose logs homephotos | grep -i "jwt\|auth\|token"`
+4. If a user cannot register, check whether `HOMEPHOTOS_REGISTRATION_OPEN` is set to `false`.
+5. If a user's password is not working, an admin can reset it through the admin UI (or the user record can be deleted and re-created).

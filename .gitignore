@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+backend/tmp/
+frontend/.svelte-kit/
+frontend/build/
+
+# Environment
+.env.local
+*.local
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Generated code
+backend/ports/rest/server.gen.go
+backend/database/sqlite/db.go
+backend/database/sqlite/models.go
+backend/database/sqlite/queries.sql.go
+frontend/src/lib/api/gen/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Cache
+cache/
+
+# Go
+backend/bin/

@@ -1,0 +1,6 @@
+package: rest
+generate:
+  std-http-server: true
+  models: true
+  embedded-spec: true
+output: ./ports/rest/server.gen.go

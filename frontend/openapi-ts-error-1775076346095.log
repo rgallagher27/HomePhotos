@@ -1,0 +1,12 @@
+🚫 client needs to be set to generate SDKs - which HTTP client do you want to use?
+Error: 🚫 client needs to be set to generate SDKs - which HTTP client do you want to use?
+    at Object.pluginByTag (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:59226)
+    at Object._infer (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:5665)
+    at i (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:59305)
+    at td (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:59398)
+    at nd (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:60016)
+    at /Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:61287
+    at Array.map (<anonymous>)
+    at oc (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:15:60575)
+    at async pj (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/dist/index.cjs:1311:4415)
+    at async start (/Users/rgallagher/Development/HomePhotos/frontend/node_modules/@hey-api/openapi-ts/bin/index.cjs:124:21)

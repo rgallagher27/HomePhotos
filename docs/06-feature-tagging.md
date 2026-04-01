@@ -29,7 +29,7 @@ Individual tag definitions. Each tag optionally belongs to a group.
 | `name`       | TEXT    | NOT NULL                                 |
 | `color`      | TEXT    | Hex color code (e.g., `#e74c3c`)        |
 | `group_id`   | INTEGER | REFERENCES `tag_groups(id)`, nullable for ungrouped tags |
-| `created_by` | TEXT    | Clerk user ID                            |
+| `created_by` | TEXT    | User ID                                  |
 | `created_at` | DATETIME |                                         |
 
 **Unique constraint:** `UNIQUE(name, group_id)` -- the same tag name can exist in different groups, but not duplicated within a single group.
@@ -42,7 +42,7 @@ Junction table associating photos with tags.
 | ------------ | ------- | ------------------------------ |
 | `photo_id`   | INTEGER | REFERENCES `photos(id)`       |
 | `tag_id`     | INTEGER | REFERENCES `tags(id)`         |
-| `created_by` | TEXT    | Clerk user ID                  |
+| `created_by` | TEXT    | User ID                        |
 | `created_at` | DATETIME |                               |
 
 **Primary key:** `PRIMARY KEY(photo_id, tag_id)` -- a photo can only have each tag applied once.

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/rgallagher/Development/denkeeper/backend/.env*)",
+      "Bash(chmod:*)",
+      "Bash(go get:*)",
+      "Bash(go mod:*)",
+      "Bash(go install:*)",
+      "Bash(oapi-codegen:*)",
+      "Bash(sqlc generate:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(npx --yes sv create frontend --template minimal --types ts)",
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}

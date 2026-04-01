@@ -9,7 +9,7 @@
 | **Database** | SQLite (via `modernc.org/sqlite` or `mattn/go-sqlite3`) | Single-file database requiring no separate service or configuration. Perfect for 1-5 concurrent users. WAL mode provides good read concurrency. Symmetry with Lightroom Classic's `.lrcat` format (also SQLite) simplifies future catalog integration. |
 | **Image Processing** | LibRaw (via CGo or shelling out to `dcraw_emu`) | Industry-standard RAW processing library with broad camera support. Sony A7RV ARW files embed a full-resolution JPEG; LibRaw's `unpack_thumb()` extracts it in milliseconds without decoding Bayer data. Go's standard `image` library + `disintegration/imaging` handles JPEG/PNG resizing. |
 | **Cache Storage** | Local filesystem | Cached thumbnails and previews stored as `cache/{hash-prefix}/{hash}/{size}.jpg`. Simple, fast, no additional service. Content-addressable structure avoids conflicts and supports deduplication. |
-| **Auth** | Clerk | Managed authentication service providing user management, pre-built login/signup UI, session tokens (JWT), and role-based access. Free tier supports the small user count. Eliminates the need to build and maintain auth infrastructure. |
+| **Auth** | Built-in (bcrypt + JWT) | Simple username/password authentication with bcrypt password hashing and JWT tokens. No external service dependency. Appropriate for a small self-hosted app with 1-5 users. |
 | **Deployment** | Docker Compose | Single `docker-compose.yml` defining the HomePhotos service with volume mounts: SMB share (read-only) and cache directory (read-write). Simple to run on TrueNAS or any Linux host. |
 | **Reverse Proxy** | Caddy (optional) | Caddy can provide automatic HTTPS and clean URLs if desired. However, Go's built-in `net/http` server is production-quality, and Tailscale handles the network boundary -- so a reverse proxy is optional, not required. |
 
@@ -90,7 +90,8 @@ This should be tested with actual A7RV files during development and handled as n
 | `rwcarlsen/goexif` | EXIF metadata parsing. Extracts camera model, lens, focal length, aperture, shutter speed, ISO, date/time, GPS coordinates, and other fields from image files. |
 | `modernc.org/sqlite` | Pure Go SQLite driver (no CGo required). Simplifies cross-compilation and deployment. Slightly slower than the CGo alternative but eliminates the C toolchain dependency for the database layer. |
 | `mattn/go-sqlite3` | CGo-based SQLite driver. Faster than the pure Go alternative. Since LibRaw already requires CGo, the C toolchain is available anyway -- making this a viable choice if performance matters. |
-| `clerk/clerk-sdk-go` | Official Clerk SDK for Go. Handles JWT verification, session validation, and user metadata retrieval. Used in API middleware to authenticate and authorize requests. |
+| `golang-jwt/jwt/v5` | JWT signing and verification. Used in API middleware to issue tokens on login and verify them on every request. |
+| `golang.org/x/crypto/bcrypt` | Password hashing. Used to hash passwords on registration and verify them on login. |
 
 ### SQLite Driver Choice
 

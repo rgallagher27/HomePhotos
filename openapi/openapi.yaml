@@ -1,0 +1,23 @@
+openapi: 3.0.0
+info:
+  title: HomePhotos API
+  description: HomePhotos REST API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /health:
+    $ref: paths/health.yaml
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from login endpoint
+security:
+  - BearerAuth: []
+tags:
+  - name: Health
+    description: Health check

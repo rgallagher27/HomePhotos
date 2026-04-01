@@ -8,7 +8,7 @@ A self-hosted photo management application for browsing and organizing photos st
 - **No cloud dependency** — runs entirely on your home network, accessible remotely via Tailscale
 - **Read-only** — never modifies your original files on disk
 - **Optimistic caching** — generates and serves optimized thumbnails and previews so browsing is fast
-- **Multi-user** — account-scoped access for family members with role-based permissions via Clerk
+- **Multi-user** — account-scoped access for family members with role-based permissions
 - **Tagging** — organize photos with tags and tag groups without touching the source files
 - **Lightroom integration** (stretch goal) — import keywords and develop settings from your Lightroom Classic catalog
 
@@ -21,7 +21,7 @@ See the [`docs/`](docs/) directory for detailed feature specifications and archi
 | [00 - Project Overview](docs/00-project-overview.md) | Vision, goals, personas, and scope |
 | [01 - Architecture](docs/01-architecture.md) | System design, data flow, and key decisions |
 | [02 - Tech Stack](docs/02-tech-stack.md) | Technology choices and rationale |
-| [03 - User Management](docs/03-feature-user-management.md) | Clerk-based auth, roles, and user model |
+| [03 - User Management](docs/03-feature-user-management.md) | Auth, roles, and user model |
 | [04 - Photo Browsing](docs/04-feature-photo-browsing.md) | Scanning, browse views, and image serving |
 | [05 - Caching & Thumbnails](docs/05-feature-caching-thumbnails.md) | Thumbnail pipeline, cache layout, and performance |
 | [06 - Tagging](docs/06-feature-tagging.md) | Tags, tag groups, and filtering |
@@ -30,6 +30,48 @@ See the [`docs/`](docs/) directory for detailed feature specifications and archi
 | [09 - API Design](docs/09-api-design.md) | REST API specification |
 | [10 - Deployment](docs/10-deployment.md) | Docker Compose setup and configuration |
 
+## Quick Start
+
+### Prerequisites
+
+- Go 1.24+
+- Node.js 20+
+- [air](https://github.com/air-verse/air) (Go hot reload)
+- [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) (OpenAPI code gen)
+- [sqlc](https://sqlc.dev/) (SQL code gen)
+- [migrate](https://github.com/golang-migrate/migrate) (database migrations)
+
+### Setup
+
+```bash
+make setup        # Install all tools and dependencies
+make generate     # Generate server stubs and API client
+make dev          # Start backend + frontend (uses tmux)
+```
+
+Backend runs at `http://localhost:8080`, frontend at `http://localhost:5173`.
+
+### Project Structure
+
+```
+HomePhotos/
+├── backend/              # Go API server
+│   ├── cmd/server/       # Entry point
+│   ├── config/           # Config via envconfig
+│   ├── ports/rest/       # HTTP handlers + generated server
+│   ├── database/sqlite/  # SQLite, migrations, sqlc queries
+│   └── Makefile
+├── frontend/             # SvelteKit web app
+│   └── src/
+│       ├── routes/       # SvelteKit pages
+│       └── lib/api/      # API client
+├── openapi/              # Split OpenAPI spec (source of truth)
+├── infra/                # Dockerfile
+├── docker-compose.yml    # Production deployment
+├── Makefile              # Root orchestrator
+└── docs/                 # Feature specs and architecture
+```
+
 ## Status
 
-This project is in the planning/documentation phase. No code has been written yet.
+Project scaffolding is complete. Feature development has not started.

@@ -68,14 +68,11 @@ HomePhotos is designed for **no public internet exposure**. Tailscale provides t
 
 ### Authentication
 
-All API endpoints require authentication via **Clerk JWT verification**. There are no anonymous or public endpoints (except the health check).
+All API endpoints require JWT authentication (except the health check). There are no anonymous or public endpoints beyond health.
 
-Clerk handles the security-critical concerns that should not be implemented from scratch:
-
-- Password hashing and storage
-- Brute force protection and rate limiting
-- Session management and token rotation
-- Multi-factor authentication (if configured)
+- Passwords are hashed with bcrypt (cost factor 12)
+- JWTs are signed with HMAC-SHA256 using a server-side secret, with configurable expiry (default 24 hours)
+- No external service dependency for authentication -- the app is fully self-contained
 
 ### Path Traversal Prevention
 

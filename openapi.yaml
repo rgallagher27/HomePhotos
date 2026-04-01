@@ -1,0 +1,57 @@
+openapi: 3.0.0
+info:
+  title: HomePhotos API
+  description: HomePhotos REST API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+security:
+  - BearerAuth: []
+tags:
+  - name: Health
+    description: Health check
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags:
+        - Health
+      summary: Health check
+      description: Returns service health status including database connectivity
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/health_response'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/health_response'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from login endpoint
+  schemas:
+    health_response:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+        timestamp:
+          type: string
+          format: date-time

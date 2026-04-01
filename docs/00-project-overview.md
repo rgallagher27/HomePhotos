@@ -45,7 +45,7 @@ Core goals:
 - **Photo browsing** with filtering by date, tags, and albums.
 - **Caching and thumbnail generation.** Embedded JPEG extraction from ARW files, thumbnail (300px) and preview (1600px) generation, stored in a local cache directory.
 - **Tagging system.** Admin can tag photos; all users can filter by tags.
-- **Multi-user authentication** via Clerk (managed auth service). Role-based access: admin and viewer roles.
+- **Multi-user authentication** with username/password login and JWT tokens. Role-based access: admin and viewer roles.
 - **File scanning.** Watches the SMB mount for new or changed files and queues them for processing.
 - **EXIF metadata extraction** and display (camera, lens, exposure, date, GPS if present).
 - **Responsive design.** Usable on desktop browsers, tablets, and phones over the local network or Tailscale.

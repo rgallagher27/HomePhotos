@@ -13,7 +13,7 @@ flowchart LR
         Processor["Image Processor"]
         Cache["Cache Store"]
         API["API Layer"]
-        Auth["Auth (Clerk)"]
+        Auth["Auth (JWT)"]
         DB["Database (SQLite)"]
     end
 
@@ -119,6 +119,6 @@ Sony ARW files from the A7RV embed a full-resolution JPEG (approximately 60 mega
 
 SQLite is a single-file database that requires no separate service, no network configuration, and no authentication setup. It is well-suited for a 1-5 user application with a single writer (the scanner/indexer) and multiple readers (the API serving web requests). It also has a convenient symmetry with Lightroom Classic, which stores its catalog as a SQLite database -- this simplifies the stretch goal of catalog integration. Backups are as simple as copying a single file.
 
-### Clerk for authentication
+### Built-in authentication with bcrypt and JWT
 
-Building authentication from scratch (password hashing, session management, token refresh, account recovery, login UI) is a significant undertaking that is tangential to the core purpose of HomePhotos. Clerk provides a managed authentication service with pre-built UI components, JWT-based sessions, and user management. For a family app with a handful of users, the free tier is more than sufficient. The tradeoff is a dependency on an external service, but the time saved is substantial.
+For a home application serving 1-5 users, built-in username/password authentication is simple enough to implement correctly and avoids any external service dependency. Passwords are hashed with bcrypt, and the server issues HMAC-SHA256 signed JWTs for session management. This keeps the application fully self-contained -- it can run on a home network with no internet connectivity required for authentication. There is no external service to configure, no API keys to manage, and no risk of a third-party service being discontinued or changing pricing.

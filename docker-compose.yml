@@ -1,0 +1,23 @@
+services:
+  homephotos:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - /mnt/photos:/source:ro
+      - homephotos-cache:/cache
+      - homephotos-db:/data
+    environment:
+      - HOMEPHOTOS_SOURCE_PATH=/source
+      - HOMEPHOTOS_CACHE_PATH=/cache
+      - HOMEPHOTOS_DB_PATH=/data/homephotos.db
+      - HOMEPHOTOS_HOST=0.0.0.0
+      - HOMEPHOTOS_PORT=8080
+      - HOMEPHOTOS_JWT_SECRET=${HOMEPHOTOS_JWT_SECRET}
+    restart: unless-stopped
+
+volumes:
+  homephotos-cache:
+  homephotos-db:
