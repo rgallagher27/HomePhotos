@@ -58,13 +58,15 @@ HomePhotos/
 ├── backend/              # Go API server
 │   ├── cmd/server/       # Entry point
 │   ├── config/           # Config via envconfig
-│   ├── ports/rest/       # HTTP handlers + generated server
-│   ├── database/sqlite/  # SQLite, migrations, sqlc queries
+│   ├── domain/user/      # User entity, repository interface, errors
+│   ├── services/auth/    # Auth service (register, login, JWT)
+│   ├── ports/rest/       # HTTP handlers, middleware, generated server
+│   ├── database/sqlite/  # SQLite, migrations, sqlc queries, repositories
 │   └── Makefile
 ├── frontend/             # SvelteKit web app
 │   └── src/
 │       ├── routes/       # SvelteKit pages
-│       └── lib/api/      # API client
+│       └── lib/api/      # API client (manual + generated)
 ├── openapi/              # Split OpenAPI spec (source of truth)
 ├── infra/                # Dockerfile
 ├── docker-compose.yml    # Production deployment
@@ -74,4 +76,4 @@ HomePhotos/
 
 ## Status
 
-Project scaffolding is complete. Feature development has not started.
+Phase 1 (Auth & Users) is complete. The backend has user registration, login, JWT authentication, and role-based access control. See [`docs/implementation.md`](docs/implementation.md) for full details.
