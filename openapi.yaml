@@ -11,6 +11,10 @@ security:
 tags:
   - name: Health
     description: Health check
+  - name: Auth
+    description: Authentication and registration
+  - name: Users
+    description: User management
 paths:
   /health:
     get:
@@ -33,6 +37,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/health_response'
+  /api/v1/auth/register:
+    post:
+      operationId: postAuthRegister
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Create a new user account. First user gets admin role.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/register_request'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '403':
+          $ref: '#/components/responses/403'
+  /api/v1/auth/login:
+    post:
+      operationId: postAuthLogin
+      tags:
+        - Auth
+      summary: Log in
+      description: Authenticate with username and password to receive a JWT.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/login_request'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth_response'
+        '401':
+          $ref: '#/components/responses/401'
+  /api/v1/auth/me:
+    get:
+      operationId: getAuthMe
+      tags:
+        - Auth
+      summary: Get current user
+      description: Returns the authenticated user's profile.
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user_response'
+        '401':
+          $ref: '#/components/responses/401'
+  /api/v1/users:
+    get:
+      operationId: getUsers
+      tags:
+        - Users
+      summary: List users
+      description: List all users. Admin only.
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user_list_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+  /api/v1/users/{id}/role:
+    put:
+      operationId: putUserRole
+      tags:
+        - Users
+      summary: Update user role
+      description: Change a user's role. Admin only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_role_request'
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
 components:
   securitySchemes:
     BearerAuth:
@@ -55,3 +176,137 @@ components:
         timestamp:
           type: string
           format: date-time
+    register_request:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+        email:
+          type: string
+    auth_response:
+      type: object
+      required:
+        - id
+        - username
+        - role
+        - token
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - viewer
+        token:
+          type: string
+    error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    login_request:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    user_response:
+      type: object
+      required:
+        - id
+        - username
+        - role
+        - created_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - viewer
+        display_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+    user_list_response:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/user_response'
+    update_role_request:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - admin
+            - viewer
+  responses:
+    '400':
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    '403':
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    '404':
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'

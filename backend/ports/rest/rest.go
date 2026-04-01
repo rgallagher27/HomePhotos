@@ -3,16 +3,17 @@ package rest
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	middleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/rgallagher/homephotos/config"
 	"github.com/rgallagher/homephotos/database/sqlite"
+	"github.com/rgallagher/homephotos/services/auth"
 	sloghttp "github.com/samber/slog-http"
 )
 
@@ -32,19 +33,21 @@ func initServer(cfg config.Config, db *sql.DB) (*http.Server, error) {
 	}
 	swagger.Servers = nil
 
-	server := NewServer(db)
+	tokens := auth.NewTokenService(cfg.JWTSecret, 24*time.Hour)
+	userRepo := sqlite.NewUserRepository(db)
+	authSvc := auth.New(userRepo, tokens, 12, cfg.RegistrationOpen)
+
+	server := NewServer(db, authSvc, tokens, userRepo)
 
 	h := HandlerWithOptions(server, StdHTTPServerOptions{
 		BaseRouter: http.NewServeMux(),
 		Middlewares: []MiddlewareFunc{
 			middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 				Options: openapi3filter.Options{
-					AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
+					AuthenticationFunc: NewJWTAuthenticator(tokens),
 				},
 				ErrorHandler: func(w http.ResponseWriter, message string, statusCode int) {
-					e := Error{Code: fmt.Sprintf("%d", statusCode), Message: message}
-					w.WriteHeader(statusCode)
-					_ = json.NewEncoder(w).Encode(e)
+					writeError(w, statusCode, message)
 				},
 			}),
 			jsonContentTypeMiddleware,
@@ -52,6 +55,7 @@ func initServer(cfg config.Config, db *sql.DB) (*http.Server, error) {
 	})
 
 	var handler http.Handler = h
+	handler = jwtContextMiddleware(tokens)(handler)
 	handler = corsMiddleware(handler)
 	handler = sloghttp.Recovery(handler)
 	handler = sloghttp.New(slog.Default())(handler)

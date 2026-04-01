@@ -1,0 +1,15 @@
+get:
+  operationId: getAuthMe
+  tags:
+    - Auth
+  summary: Get current user
+  description: Returns the authenticated user's profile.
+  responses:
+    '200':
+      description: Current user profile
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/user_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'

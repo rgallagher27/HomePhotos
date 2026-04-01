@@ -1,0 +1,24 @@
+post:
+  operationId: postAuthRegister
+  tags:
+    - Auth
+  summary: Register a new user
+  description: Create a new user account. First user gets admin role.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/register_request.yaml'
+  responses:
+    '201':
+      description: User registered successfully
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth_response.yaml'
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'

@@ -1,0 +1,22 @@
+post:
+  operationId: postAuthLogin
+  tags:
+    - Auth
+  summary: Log in
+  description: Authenticate with username and password to receive a JWT.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/login_request.yaml'
+  responses:
+    '200':
+      description: Login successful
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
