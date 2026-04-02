@@ -10,12 +10,17 @@ import (
 
 type Querier interface {
 	CountUsers(ctx context.Context) (int64, error)
+	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetPhotoByFilePath(ctx context.Context, filePath string) (Photo, error)
+	GetPhotoByID(ctx context.Context, id int64) (Photo, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListAllFingerprints(ctx context.Context) ([]ListAllFingerprintsRow, error)
 	ListUsers(ctx context.Context) ([]ListUsersRow, error)
 	Ping(ctx context.Context) error
 	UpdateLastLogin(ctx context.Context, id int64) error
+	UpdatePhoto(ctx context.Context, arg UpdatePhotoParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 }
 

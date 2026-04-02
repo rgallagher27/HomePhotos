@@ -1,0 +1,81 @@
+type: object
+required:
+  - id
+  - file_name
+  - file_path
+  - file_size_bytes
+  - format
+  - scanned_at
+  - cache_status
+properties:
+  id:
+    type: integer
+    format: int64
+  file_name:
+    type: string
+  file_path:
+    type: string
+  file_size_bytes:
+    type: integer
+    format: int64
+  format:
+    type: string
+  width:
+    type: integer
+    nullable: true
+  height:
+    type: integer
+    nullable: true
+  captured_at:
+    type: string
+    format: date-time
+    nullable: true
+  scanned_at:
+    type: string
+    format: date-time
+  camera_make:
+    type: string
+    nullable: true
+  camera_model:
+    type: string
+    nullable: true
+  lens_model:
+    type: string
+    nullable: true
+  focal_length_mm:
+    type: number
+    format: double
+    nullable: true
+  aperture:
+    type: number
+    format: double
+    nullable: true
+  shutter_speed:
+    type: string
+    nullable: true
+  iso:
+    type: integer
+    nullable: true
+  gps_latitude:
+    type: number
+    format: double
+    nullable: true
+  gps_longitude:
+    type: number
+    format: double
+    nullable: true
+  cache_status:
+    type: string
+    enum:
+      - pending
+      - cached
+      - error
+  thumb_url:
+    type: string
+    nullable: true
+  preview_url:
+    type: string
+    nullable: true
+  full_url:
+    type: string
+    nullable: true

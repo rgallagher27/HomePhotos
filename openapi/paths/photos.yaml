@@ -1,0 +1,69 @@
+get:
+  operationId: getPhotos
+  tags:
+    - Photos
+  summary: List photos
+  description: List photos with pagination, filtering, and sorting
+  parameters:
+    - name: cursor
+      in: query
+      schema:
+        type: string
+      description: Opaque cursor from previous response
+    - name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 200
+      description: Number of photos per page
+    - name: sort
+      in: query
+      schema:
+        type: string
+        enum:
+          - captured_at
+          - file_name
+        default: captured_at
+      description: Field to sort by
+    - name: order
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: desc
+      description: Sort direction
+    - name: date_from
+      in: query
+      schema:
+        type: string
+        format: date
+      description: Include photos captured on or after this date
+    - name: date_to
+      in: query
+      schema:
+        type: string
+        format: date
+      description: Include photos captured on or before this date
+    - name: folder
+      in: query
+      schema:
+        type: string
+      description: Filter to photos within a folder path
+    - name: format
+      in: query
+      schema:
+        type: string
+      description: Filter by file format (e.g. arw, jpg)
+  responses:
+    '200':
+      description: List of photos
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/photo_list_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'

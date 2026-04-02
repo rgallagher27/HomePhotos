@@ -15,6 +15,10 @@ tags:
     description: Authentication and registration
   - name: Users
     description: User management
+  - name: Photos
+    description: Photo browsing and metadata
+  - name: Scanner
+    description: Filesystem scanner
 paths:
   /health:
     get:
@@ -154,6 +158,139 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           $ref: '#/components/responses/404'
+  /api/v1/photos:
+    get:
+      operationId: getPhotos
+      tags:
+        - Photos
+      summary: List photos
+      description: List photos with pagination, filtering, and sorting
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Opaque cursor from previous response
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+          description: Number of photos per page
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - captured_at
+              - file_name
+            default: captured_at
+          description: Field to sort by
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+          description: Sort direction
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Include photos captured on or after this date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Include photos captured on or before this date
+        - name: folder
+          in: query
+          schema:
+            type: string
+          description: Filter to photos within a folder path
+        - name: format
+          in: query
+          schema:
+            type: string
+          description: Filter by file format (e.g. arw, jpg)
+      responses:
+        '200':
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/photo_list_response'
+        '401':
+          $ref: '#/components/responses/401'
+  /api/v1/photos/{id}:
+    get:
+      operationId: getPhoto
+      tags:
+        - Photos
+      summary: Get photo detail
+      description: Retrieve full detail for a single photo including all EXIF metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Photo detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/photo_detail_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+  /api/v1/scanner/run:
+    post:
+      operationId: postScannerRun
+      tags:
+        - Scanner
+      summary: Trigger a filesystem scan
+      description: Start a filesystem scan. Returns 409 if a scan is already in progress.
+      responses:
+        '202':
+          description: Scan started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/scanner_run_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+  /api/v1/scanner/status:
+    get:
+      operationId: getScannerStatus
+      tags:
+        - Scanner
+      summary: Get scanner status
+      description: Returns the current state of the filesystem scanner
+      responses:
+        '200':
+          description: Scanner status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/scanner_status_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
 components:
   securitySchemes:
     BearerAuth:
@@ -285,6 +422,163 @@ components:
           enum:
             - admin
             - viewer
+    photo_list_item:
+      type: object
+      required:
+        - id
+        - file_name
+        - format
+        - cache_status
+      properties:
+        id:
+          type: integer
+          format: int64
+        file_name:
+          type: string
+        file_path:
+          type: string
+        format:
+          type: string
+        captured_at:
+          type: string
+          format: date-time
+          nullable: true
+        camera_model:
+          type: string
+          nullable: true
+        cache_status:
+          type: string
+          enum:
+            - pending
+            - cached
+            - error
+        thumb_url:
+          type: string
+          nullable: true
+    photo_list_response:
+      type: object
+      required:
+        - data
+        - has_more
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/photo_list_item'
+        next_cursor:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+    photo_detail_response:
+      type: object
+      required:
+        - id
+        - file_name
+        - file_path
+        - file_size_bytes
+        - format
+        - scanned_at
+        - cache_status
+      properties:
+        id:
+          type: integer
+          format: int64
+        file_name:
+          type: string
+        file_path:
+          type: string
+        file_size_bytes:
+          type: integer
+          format: int64
+        format:
+          type: string
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        captured_at:
+          type: string
+          format: date-time
+          nullable: true
+        scanned_at:
+          type: string
+          format: date-time
+        camera_make:
+          type: string
+          nullable: true
+        camera_model:
+          type: string
+          nullable: true
+        lens_model:
+          type: string
+          nullable: true
+        focal_length_mm:
+          type: number
+          format: double
+          nullable: true
+        aperture:
+          type: number
+          format: double
+          nullable: true
+        shutter_speed:
+          type: string
+          nullable: true
+        iso:
+          type: integer
+          nullable: true
+        gps_latitude:
+          type: number
+          format: double
+          nullable: true
+        gps_longitude:
+          type: number
+          format: double
+          nullable: true
+        cache_status:
+          type: string
+          enum:
+            - pending
+            - cached
+            - error
+        thumb_url:
+          type: string
+          nullable: true
+        preview_url:
+          type: string
+          nullable: true
+        full_url:
+          type: string
+          nullable: true
+    scanner_run_response:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+    scanner_status_response:
+      type: object
+      required:
+        - status
+        - total_files
+        - processed
+        - errors
+      properties:
+        status:
+          type: string
+        total_files:
+          type: integer
+        processed:
+          type: integer
+        errors:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
   responses:
     '400':
       description: Bad request
@@ -306,6 +600,12 @@ components:
             $ref: '#/components/schemas/error'
     '404':
       description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    '409':
+      description: Conflict
       content:
         application/json:
           schema:

@@ -1,0 +1,32 @@
+type: object
+required:
+  - id
+  - file_name
+  - format
+  - cache_status
+properties:
+  id:
+    type: integer
+    format: int64
+  file_name:
+    type: string
+  file_path:
+    type: string
+  format:
+    type: string
+  captured_at:
+    type: string
+    format: date-time
+    nullable: true
+  camera_model:
+    type: string
+    nullable: true
+  cache_status:
+    type: string
+    enum:
+      - pending
+      - cached
+      - error
+  thumb_url:
+    type: string
+    nullable: true

@@ -1,0 +1,14 @@
+type: object
+required:
+  - data
+  - has_more
+properties:
+  data:
+    type: array
+    items:
+      $ref: 'photo_list_item.yaml'
+  next_cursor:
+    type: string
+    nullable: true
+  has_more:
+    type: boolean

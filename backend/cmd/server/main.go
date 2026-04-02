@@ -12,6 +12,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rgallagher/homephotos/config"
 	"github.com/rgallagher/homephotos/ports/rest"
+	"github.com/rgallagher/homephotos/services/scanner"
 )
 
 func main() {
@@ -33,10 +34,14 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
-	httpServer, err := rest.NewRestServer(ctx, cfg)
+	httpServer, scannerSvc, err := rest.NewRestServer(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("setup server: %w", err)
 	}
+
+	// Start scanner scheduler in background
+	sched := scanner.NewScheduler(scannerSvc, cfg.ScanInterval, cfg.ScanOnStartup)
+	go sched.Start(ctx)
 
 	serverErr := make(chan error, 1)
 

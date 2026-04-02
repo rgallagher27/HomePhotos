@@ -1,0 +1,19 @@
+post:
+  operationId: postScannerRun
+  tags:
+    - Scanner
+  summary: Trigger a filesystem scan
+  description: Start a filesystem scan. Returns 409 if a scan is already in progress.
+  responses:
+    '202':
+      description: Scan started
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/scanner_run_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '409':
+      $ref: '../components/responses/409.yaml'

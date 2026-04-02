@@ -1,0 +1,24 @@
+get:
+  operationId: getPhoto
+  tags:
+    - Photos
+  summary: Get photo detail
+  description: Retrieve full detail for a single photo including all EXIF metadata
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    '200':
+      description: Photo detail
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/photo_detail_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

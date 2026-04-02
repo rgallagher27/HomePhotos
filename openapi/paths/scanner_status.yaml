@@ -1,0 +1,17 @@
+get:
+  operationId: getScannerStatus
+  tags:
+    - Scanner
+  summary: Get scanner status
+  description: Returns the current state of the filesystem scanner
+  responses:
+    '200':
+      description: Scanner status
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/scanner_status_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'

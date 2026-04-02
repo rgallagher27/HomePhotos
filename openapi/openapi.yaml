@@ -19,6 +19,14 @@ paths:
     $ref: paths/users.yaml
   /api/v1/users/{id}/role:
     $ref: paths/users_id_role.yaml
+  /api/v1/photos:
+    $ref: paths/photos.yaml
+  /api/v1/photos/{id}:
+    $ref: paths/photos_id.yaml
+  /api/v1/scanner/run:
+    $ref: paths/scanner_run.yaml
+  /api/v1/scanner/status:
+    $ref: paths/scanner_status.yaml
 components:
   securitySchemes:
     BearerAuth:
@@ -35,3 +43,7 @@ tags:
     description: Authentication and registration
   - name: Users
     description: User management
+  - name: Photos
+    description: Photo browsing and metadata
+  - name: Scanner
+    description: Filesystem scanner

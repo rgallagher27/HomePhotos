@@ -14,10 +14,10 @@ import (
 
 	"github.com/rgallagher/homephotos/database/sqlite"
 	"github.com/rgallagher/homephotos/services/auth"
+	"github.com/rgallagher/homephotos/services/scanner"
 )
 
 // testServer creates a Server backed by an in-memory SQLite database with migrations applied.
-// Returns the server and a cleanup function.
 func testServer(t *testing.T, registrationOpen bool) *Server {
 	t.Helper()
 
@@ -25,8 +25,10 @@ func testServer(t *testing.T, registrationOpen bool) *Server {
 	tokens := auth.NewTokenService("test-secret", time.Hour)
 	userRepo := sqlite.NewUserRepository(db)
 	authSvc := auth.New(userRepo, tokens, 4, registrationOpen) // cost 4 for fast tests
+	photoRepo := sqlite.NewPhotoRepository(db)
+	scannerSvc := scanner.New(photoRepo, t.TempDir())
 
-	return NewServer(db, authSvc, tokens, userRepo)
+	return NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc)
 }
 
 func setupTestDB(t *testing.T) *sql.DB {
