@@ -13,4 +13,5 @@ type Config struct {
 	RegistrationOpen bool          `envconfig:"registration_open" default:"true"`
 	ScanInterval     time.Duration `envconfig:"scan_interval" default:"6h"`
 	ScanOnStartup    bool          `envconfig:"scan_on_startup" default:"true"`
+	CacheWorkers     int           `envconfig:"cache_workers" default:"4"`
 }
