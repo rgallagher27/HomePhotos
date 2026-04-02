@@ -30,4 +30,6 @@ type Repository interface {
 	List(ctx context.Context, params ListParams) (*ListResult, error)
 	DeleteOrphaned(ctx context.Context, activePaths []string) (int64, error)
 	ListAllFingerprints(ctx context.Context) (map[string]string, error)
+	ListPending(ctx context.Context, limit int) ([]Photo, error)
+	UpdateCacheStatus(ctx context.Context, id int64, status CacheStatus) error
 }

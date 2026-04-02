@@ -410,3 +410,94 @@ func TestPhotoRepository_List_CursorPagination(t *testing.T) {
 		t.Error("page 3: expected has_more = false")
 	}
 }
+
+func TestPhotoRepository_ListPending(t *testing.T) {
+	db := setupTestDB(t)
+	repo := sqlite.NewPhotoRepository(db)
+	ctx := context.Background()
+
+	t1 := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
+	t3 := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
+
+	// Create photos with mixed statuses
+	p1 := newTestPhoto("pending1.jpg", "pending1.jpg", "jpg")
+	p1.CapturedAt = &t1
+	p1.Fingerprint = "fp-pending1"
+	created1, _ := repo.Create(ctx, p1)
+
+	p2 := newTestPhoto("cached.jpg", "cached.jpg", "jpg")
+	p2.CapturedAt = &t2
+	p2.Fingerprint = "fp-cached"
+	created2, _ := repo.Create(ctx, p2)
+	repo.UpdateCacheStatus(ctx, created2.ID, photo.CacheStatusCached)
+
+	p3 := newTestPhoto("pending2.jpg", "pending2.jpg", "jpg")
+	p3.CapturedAt = &t3
+	p3.Fingerprint = "fp-pending2"
+	created3, _ := repo.Create(ctx, p3)
+
+	p4 := newTestPhoto("error.jpg", "error.jpg", "jpg")
+	p4.Fingerprint = "fp-error"
+	created4, _ := repo.Create(ctx, p4)
+	repo.UpdateCacheStatus(ctx, created4.ID, photo.CacheStatusError)
+
+	// Should return only pending, ordered by captured_at DESC
+	pending, err := repo.ListPending(ctx, 10)
+	if err != nil {
+		t.Fatalf("list pending: %v", err)
+	}
+	if len(pending) != 2 {
+		t.Fatalf("len = %d, want 2", len(pending))
+	}
+	// t3 (March) is more recent than t1 (January)
+	if pending[0].ID != created3.ID {
+		t.Errorf("first = %d, want %d (newest pending)", pending[0].ID, created3.ID)
+	}
+	if pending[1].ID != created1.ID {
+		t.Errorf("second = %d, want %d (oldest pending)", pending[1].ID, created1.ID)
+	}
+
+	// Respects limit
+	limited, err := repo.ListPending(ctx, 1)
+	if err != nil {
+		t.Fatalf("list pending limit: %v", err)
+	}
+	if len(limited) != 1 {
+		t.Errorf("limited len = %d, want 1", len(limited))
+	}
+}
+
+func TestPhotoRepository_UpdateCacheStatus(t *testing.T) {
+	db := setupTestDB(t)
+	repo := sqlite.NewPhotoRepository(db)
+	ctx := context.Background()
+
+	p := newTestPhoto("status.jpg", "status.jpg", "jpg")
+	p.Fingerprint = "fp-status"
+	created, _ := repo.Create(ctx, p)
+
+	if created.CacheStatus != photo.CacheStatusPending {
+		t.Fatalf("initial status = %q, want pending", created.CacheStatus)
+	}
+
+	// Update to cached
+	if err := repo.UpdateCacheStatus(ctx, created.ID, photo.CacheStatusCached); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	got, _ := repo.GetByID(ctx, created.ID)
+	if got.CacheStatus != photo.CacheStatusCached {
+		t.Errorf("status = %q, want cached", got.CacheStatus)
+	}
+
+	// Update to error
+	if err := repo.UpdateCacheStatus(ctx, created.ID, photo.CacheStatusError); err != nil {
+		t.Fatalf("update error: %v", err)
+	}
+
+	got, _ = repo.GetByID(ctx, created.ID)
+	if got.CacheStatus != photo.CacheStatusError {
+		t.Errorf("status = %q, want error", got.CacheStatus)
+	}
+}

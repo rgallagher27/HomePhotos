@@ -157,6 +157,25 @@ func (r *PhotoRepository) DeleteOrphaned(ctx context.Context, activePaths []stri
 	return res.RowsAffected()
 }
 
+func (r *PhotoRepository) ListPending(ctx context.Context, limit int) ([]photo.Photo, error) {
+	rows, err := r.q.ListPendingPhotos(ctx, int64(limit))
+	if err != nil {
+		return nil, fmt.Errorf("list pending photos: %w", err)
+	}
+	photos := make([]photo.Photo, len(rows))
+	for i, row := range rows {
+		photos[i] = *rowToPhoto(row)
+	}
+	return photos, nil
+}
+
+func (r *PhotoRepository) UpdateCacheStatus(ctx context.Context, id int64, status photo.CacheStatus) error {
+	return r.q.UpdatePhotoCacheStatus(ctx, UpdatePhotoCacheStatusParams{
+		CacheStatus: string(status),
+		ID:          id,
+	})
+}
+
 func (r *PhotoRepository) List(ctx context.Context, params photo.ListParams) (*photo.ListResult, error) {
 	sortCol := "captured_at"
 	if params.SortBy == "file_name" {

@@ -17,10 +17,12 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListAllFingerprints(ctx context.Context) ([]ListAllFingerprintsRow, error)
+	ListPendingPhotos(ctx context.Context, limit int64) ([]Photo, error)
 	ListUsers(ctx context.Context) ([]ListUsersRow, error)
 	Ping(ctx context.Context) error
 	UpdateLastLogin(ctx context.Context, id int64) error
 	UpdatePhoto(ctx context.Context, arg UpdatePhotoParams) error
+	UpdatePhotoCacheStatus(ctx context.Context, arg UpdatePhotoCacheStatusParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 }
 

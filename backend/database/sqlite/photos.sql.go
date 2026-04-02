@@ -206,6 +206,63 @@ func (q *Queries) ListAllFingerprints(ctx context.Context) ([]ListAllFingerprint
 	return items, nil
 }
 
+const listPendingPhotos = `-- name: ListPendingPhotos :many
+SELECT id, file_path, file_name, file_size, file_mtime, format,
+    width, height, captured_at, camera_make, camera_model, lens_model,
+    focal_length, aperture, shutter_speed, iso, orientation,
+    gps_latitude, gps_longitude, fingerprint, scanned_at, cache_status
+FROM photos
+WHERE cache_status = 'pending'
+ORDER BY captured_at DESC
+LIMIT ?
+`
+
+func (q *Queries) ListPendingPhotos(ctx context.Context, limit int64) ([]Photo, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingPhotos, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Photo
+	for rows.Next() {
+		var i Photo
+		if err := rows.Scan(
+			&i.ID,
+			&i.FilePath,
+			&i.FileName,
+			&i.FileSize,
+			&i.FileMtime,
+			&i.Format,
+			&i.Width,
+			&i.Height,
+			&i.CapturedAt,
+			&i.CameraMake,
+			&i.CameraModel,
+			&i.LensModel,
+			&i.FocalLength,
+			&i.Aperture,
+			&i.ShutterSpeed,
+			&i.Iso,
+			&i.Orientation,
+			&i.GpsLatitude,
+			&i.GpsLongitude,
+			&i.Fingerprint,
+			&i.ScannedAt,
+			&i.CacheStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updatePhoto = `-- name: UpdatePhoto :exec
 UPDATE photos SET
     file_size = ?, file_mtime = ?, format = ?,
@@ -263,5 +320,19 @@ func (q *Queries) UpdatePhoto(ctx context.Context, arg UpdatePhotoParams) error 
 		arg.CacheStatus,
 		arg.ID,
 	)
+	return err
+}
+
+const updatePhotoCacheStatus = `-- name: UpdatePhotoCacheStatus :exec
+UPDATE photos SET cache_status = ? WHERE id = ?
+`
+
+type UpdatePhotoCacheStatusParams struct {
+	CacheStatus string `json:"cache_status"`
+	ID          int64  `json:"id"`
+}
+
+func (q *Queries) UpdatePhotoCacheStatus(ctx context.Context, arg UpdatePhotoCacheStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updatePhotoCacheStatus, arg.CacheStatus, arg.ID)
 	return err
 }

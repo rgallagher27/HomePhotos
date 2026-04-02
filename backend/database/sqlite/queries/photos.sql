@@ -38,3 +38,16 @@ FROM photos WHERE file_path = ?;
 
 -- name: ListAllFingerprints :many
 SELECT file_path, fingerprint FROM photos;
+
+-- name: ListPendingPhotos :many
+SELECT id, file_path, file_name, file_size, file_mtime, format,
+    width, height, captured_at, camera_make, camera_model, lens_model,
+    focal_length, aperture, shutter_speed, iso, orientation,
+    gps_latitude, gps_longitude, fingerprint, scanned_at, cache_status
+FROM photos
+WHERE cache_status = 'pending'
+ORDER BY captured_at DESC
+LIMIT ?;
+
+-- name: UpdatePhotoCacheStatus :exec
+UPDATE photos SET cache_status = ? WHERE id = ?;
