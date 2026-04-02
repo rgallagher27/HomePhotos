@@ -14,6 +14,8 @@ type ListParams struct {
 	DateTo    *time.Time
 	Folder    string
 	Format    string
+	TagIDs    []int64
+	TagMode   string // "and" or "or" (default "or")
 }
 
 type ListResult struct {

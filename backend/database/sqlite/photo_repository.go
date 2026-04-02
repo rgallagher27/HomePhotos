@@ -237,6 +237,27 @@ func (r *PhotoRepository) List(ctx context.Context, params photo.ListParams) (*p
 		args = append(args, strings.ToLower(params.Format))
 	}
 
+	if len(params.TagIDs) > 0 {
+		placeholders := make([]string, len(params.TagIDs))
+		tagArgs := make([]any, len(params.TagIDs))
+		for i, id := range params.TagIDs {
+			placeholders[i] = "?"
+			tagArgs[i] = id
+		}
+		inClause := strings.Join(placeholders, ",")
+
+		if params.TagMode == "and" {
+			where = append(where,
+				fmt.Sprintf("(SELECT COUNT(DISTINCT tag_id) FROM photo_tags WHERE photo_tags.photo_id = photos.id AND photo_tags.tag_id IN (%s)) = ?", inClause))
+			args = append(args, tagArgs...)
+			args = append(args, len(params.TagIDs))
+		} else {
+			where = append(where,
+				fmt.Sprintf("EXISTS (SELECT 1 FROM photo_tags WHERE photo_tags.photo_id = photos.id AND photo_tags.tag_id IN (%s))", inClause))
+			args = append(args, tagArgs...)
+		}
+	}
+
 	query := "SELECT id, file_path, file_name, file_size, file_mtime, format, " +
 		"width, height, captured_at, camera_make, camera_model, lens_model, " +
 		"focal_length, aperture, shutter_speed, iso, orientation, " +

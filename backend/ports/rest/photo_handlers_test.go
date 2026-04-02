@@ -136,3 +136,95 @@ func TestGetPhoto_Unauthenticated(t *testing.T) {
 func itoa64(i int64) string {
 	return fmt.Sprintf("%d", i)
 }
+
+func TestGetPhotos_TagFilter(t *testing.T) {
+	env := newTestEnv(t, true)
+	handler := buildHandler(t, env.server)
+	token := registerUser(t, handler, "admin", "password123")
+
+	p1 := createTestPhotoViaRepo(t, env, "filter1.jpg")
+	p2 := createTestPhotoViaRepo(t, env, "filter2.jpg")
+	createTestPhotoViaRepo(t, env, "filter3.jpg") // no tags
+
+	tag1 := createTestTagViaAPI(t, handler, token, "FilterA")
+	tag2 := createTestTagViaAPI(t, handler, token, "FilterB")
+
+	doRequest(t, handler, "POST", "/api/v1/photos/"+itoa64(p1.ID)+"/tags",
+		`{"tag_ids":[`+itoa64(tag1.Id)+`]}`, token)
+	doRequest(t, handler, "POST", "/api/v1/photos/"+itoa64(p2.ID)+"/tags",
+		`{"tag_ids":[`+itoa64(tag1.Id)+`,`+itoa64(tag2.Id)+`]}`, token)
+
+	// OR filter: tag1 → p1, p2
+	resp := doRequest(t, handler, "GET", "/api/v1/photos?tags="+itoa64(tag1.Id), "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	var body PhotoListResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Data) != 2 {
+		t.Errorf("or filter: len = %d, want 2", len(body.Data))
+	}
+
+	// AND filter: tag1 AND tag2 → only p2
+	resp = doRequest(t, handler, "GET",
+		"/api/v1/photos?tags="+itoa64(tag1.Id)+","+itoa64(tag2.Id)+"&tag_mode=and", "", token)
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Data) != 1 {
+		t.Errorf("and filter: len = %d, want 1", len(body.Data))
+	}
+}
+
+func TestGetPhoto_IncludesTags(t *testing.T) {
+	env := newTestEnv(t, true)
+	handler := buildHandler(t, env.server)
+	token := registerUser(t, handler, "admin", "password123")
+
+	p := createTestPhotoViaRepo(t, env, "detail-tags.jpg")
+	tag1 := createTestTagViaAPI(t, handler, token, "DetailTag")
+
+	doRequest(t, handler, "POST", "/api/v1/photos/"+itoa64(p.ID)+"/tags",
+		`{"tag_ids":[`+itoa64(tag1.Id)+`]}`, token)
+
+	resp := doRequest(t, handler, "GET", "/api/v1/photos/"+itoa64(p.ID), "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var body PhotoDetailResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if body.Tags == nil || len(*body.Tags) != 1 {
+		t.Fatalf("tags = %v, want 1 tag", body.Tags)
+	}
+	if (*body.Tags)[0].Name != "DetailTag" {
+		t.Errorf("tag name = %q, want DetailTag", (*body.Tags)[0].Name)
+	}
+}
+
+func TestGetPhotos_IncludesTagsInListItems(t *testing.T) {
+	env := newTestEnv(t, true)
+	handler := buildHandler(t, env.server)
+	token := registerUser(t, handler, "admin", "password123")
+
+	p := createTestPhotoViaRepo(t, env, "list-tags.jpg")
+	tag1 := createTestTagViaAPI(t, handler, token, "ListTag")
+
+	doRequest(t, handler, "POST", "/api/v1/photos/"+itoa64(p.ID)+"/tags",
+		`{"tag_ids":[`+itoa64(tag1.Id)+`]}`, token)
+
+	resp := doRequest(t, handler, "GET", "/api/v1/photos", "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var body PhotoListResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Data) != 1 {
+		t.Fatalf("data len = %d, want 1", len(body.Data))
+	}
+	if body.Data[0].Tags == nil || len(*body.Data[0].Tags) != 1 {
+		t.Fatalf("tags = %v, want 1 tag", body.Data[0].Tags)
+	}
+	if (*body.Data[0].Tags)[0].Name != "ListTag" {
+		t.Errorf("tag name = %q, want ListTag", (*body.Data[0].Tags)[0].Name)
+	}
+}

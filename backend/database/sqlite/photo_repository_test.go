@@ -7,6 +7,8 @@ import (
 
 	"github.com/rgallagher/homephotos/database/sqlite"
 	"github.com/rgallagher/homephotos/domain/photo"
+	"github.com/rgallagher/homephotos/domain/tag"
+	"github.com/rgallagher/homephotos/domain/user"
 )
 
 func newTestPhoto(filePath, fileName, format string) *photo.Photo {
@@ -499,5 +501,117 @@ func TestPhotoRepository_UpdateCacheStatus(t *testing.T) {
 	got, _ = repo.GetByID(ctx, created.ID)
 	if got.CacheStatus != photo.CacheStatusError {
 		t.Errorf("status = %q, want error", got.CacheStatus)
+	}
+}
+
+func TestPhotoRepository_List_TagFilterOR(t *testing.T) {
+	db := setupTestDB(t)
+	photoRepo := sqlite.NewPhotoRepository(db)
+	tagRepo := sqlite.NewTagRepository(db)
+	userRepo := sqlite.NewUserRepository(db)
+	ctx := context.Background()
+
+	u, _ := userRepo.Create(ctx, &user.User{Username: "admin", PasswordHash: "hash", Role: user.RoleAdmin})
+
+	p1, _ := photoRepo.Create(ctx, newTestPhoto("or1.jpg", "or1.jpg", "jpg"))
+	p2, _ := photoRepo.Create(ctx, newTestPhoto("or2.jpg", "or2.jpg", "jpg"))
+	p3, _ := photoRepo.Create(ctx, newTestPhoto("or3.jpg", "or3.jpg", "jpg"))
+
+	t1, _ := tagRepo.CreateTag(ctx, &tag.Tag{Name: "A", CreatedBy: u.ID})
+	t2, _ := tagRepo.CreateTag(ctx, &tag.Tag{Name: "B", CreatedBy: u.ID})
+
+	tagRepo.AddPhotoTags(ctx, p1.ID, []int64{t1.ID}, u.ID)         // p1: A
+	tagRepo.AddPhotoTags(ctx, p2.ID, []int64{t2.ID}, u.ID)         // p2: B
+	tagRepo.AddPhotoTags(ctx, p3.ID, []int64{t1.ID, t2.ID}, u.ID)  // p3: A, B
+
+	// OR filter: tag A or B → all 3
+	result, err := photoRepo.List(ctx, photo.ListParams{Limit: 10, TagIDs: []int64{t1.ID, t2.ID}, TagMode: "or"})
+	if err != nil {
+		t.Fatalf("list or: %v", err)
+	}
+	if len(result.Photos) != 3 {
+		t.Errorf("or filter: len = %d, want 3", len(result.Photos))
+	}
+
+	// OR filter: tag A only → p1 and p3
+	result, err = photoRepo.List(ctx, photo.ListParams{Limit: 10, TagIDs: []int64{t1.ID}, TagMode: "or"})
+	if err != nil {
+		t.Fatalf("list or single: %v", err)
+	}
+	if len(result.Photos) != 2 {
+		t.Errorf("or single filter: len = %d, want 2", len(result.Photos))
+	}
+}
+
+func TestPhotoRepository_List_TagFilterAND(t *testing.T) {
+	db := setupTestDB(t)
+	photoRepo := sqlite.NewPhotoRepository(db)
+	tagRepo := sqlite.NewTagRepository(db)
+	userRepo := sqlite.NewUserRepository(db)
+	ctx := context.Background()
+
+	u, _ := userRepo.Create(ctx, &user.User{Username: "admin", PasswordHash: "hash", Role: user.RoleAdmin})
+
+	p1, _ := photoRepo.Create(ctx, newTestPhoto("and1.jpg", "and1.jpg", "jpg"))
+	p2, _ := photoRepo.Create(ctx, newTestPhoto("and2.jpg", "and2.jpg", "jpg"))
+	p3, _ := photoRepo.Create(ctx, newTestPhoto("and3.jpg", "and3.jpg", "jpg"))
+
+	t1, _ := tagRepo.CreateTag(ctx, &tag.Tag{Name: "X", CreatedBy: u.ID})
+	t2, _ := tagRepo.CreateTag(ctx, &tag.Tag{Name: "Y", CreatedBy: u.ID})
+
+	tagRepo.AddPhotoTags(ctx, p1.ID, []int64{t1.ID}, u.ID)         // p1: X
+	tagRepo.AddPhotoTags(ctx, p2.ID, []int64{t1.ID, t2.ID}, u.ID)  // p2: X, Y
+	tagRepo.AddPhotoTags(ctx, p3.ID, []int64{t2.ID}, u.ID)         // p3: Y
+
+	// AND filter: X and Y → only p2
+	result, err := photoRepo.List(ctx, photo.ListParams{Limit: 10, TagIDs: []int64{t1.ID, t2.ID}, TagMode: "and"})
+	if err != nil {
+		t.Fatalf("list and: %v", err)
+	}
+	if len(result.Photos) != 1 {
+		t.Errorf("and filter: len = %d, want 1", len(result.Photos))
+	}
+	if result.Photos[0].FileName != "and2.jpg" {
+		t.Errorf("and filter: got %q, want and2.jpg", result.Photos[0].FileName)
+	}
+}
+
+func TestPhotoRepository_List_TagFilterWithDateRange(t *testing.T) {
+	db := setupTestDB(t)
+	photoRepo := sqlite.NewPhotoRepository(db)
+	tagRepo := sqlite.NewTagRepository(db)
+	userRepo := sqlite.NewUserRepository(db)
+	ctx := context.Background()
+
+	u, _ := userRepo.Create(ctx, &user.User{Username: "admin", PasswordHash: "hash", Role: user.RoleAdmin})
+
+	t1Date := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	t2Date := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
+
+	p1 := newTestPhoto("combo1.jpg", "combo1.jpg", "jpg")
+	p1.CapturedAt = &t1Date
+	created1, _ := photoRepo.Create(ctx, p1)
+
+	p2 := newTestPhoto("combo2.jpg", "combo2.jpg", "jpg")
+	p2.CapturedAt = &t2Date
+	created2, _ := photoRepo.Create(ctx, p2)
+
+	tg, _ := tagRepo.CreateTag(ctx, &tag.Tag{Name: "Combo", CreatedBy: u.ID})
+	tagRepo.AddPhotoTags(ctx, created1.ID, []int64{tg.ID}, u.ID)
+	tagRepo.AddPhotoTags(ctx, created2.ID, []int64{tg.ID}, u.ID)
+
+	// Tag filter + date range: only p2 matches both
+	dateFrom := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	result, err := photoRepo.List(ctx, photo.ListParams{
+		Limit:    10,
+		TagIDs:   []int64{tg.ID},
+		TagMode:  "or",
+		DateFrom: &dateFrom,
+	})
+	if err != nil {
+		t.Fatalf("list combo: %v", err)
+	}
+	if len(result.Photos) != 1 {
+		t.Errorf("combo filter: len = %d, want 1", len(result.Photos))
 	}
 }

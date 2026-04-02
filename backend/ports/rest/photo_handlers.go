@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rgallagher/homephotos/domain/photo"
@@ -49,6 +51,19 @@ func (s *Server) GetPhotos(w http.ResponseWriter, r *http.Request, params GetPho
 	if params.Format != nil {
 		listParams.Format = *params.Format
 	}
+	if params.Tags != nil && *params.Tags != "" {
+		for _, s := range strings.Split(*params.Tags, ",") {
+			id, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid tag id")
+				return
+			}
+			listParams.TagIDs = append(listParams.TagIDs, id)
+		}
+	}
+	if params.TagMode != nil {
+		listParams.TagMode = string(*params.TagMode)
+	}
 
 	result, err := s.photos.List(r.Context(), listParams)
 	if err != nil {
@@ -57,8 +72,25 @@ func (s *Server) GetPhotos(w http.ResponseWriter, r *http.Request, params GetPho
 	}
 
 	data := make([]PhotoListItem, len(result.Photos))
+	photoIDs := make([]int64, len(result.Photos))
 	for i, p := range result.Photos {
 		data[i] = photoToListItem(p)
+		photoIDs[i] = p.ID
+	}
+
+	if len(photoIDs) > 0 {
+		tagMap, err := s.tags.ListTagsForPhotos(r.Context(), photoIDs)
+		if err == nil {
+			for i, p := range result.Photos {
+				if tags, ok := tagMap[p.ID]; ok {
+					summaries := make([]PhotoTagSummary, len(tags))
+					for j, t := range tags {
+						summaries[j] = PhotoTagSummary{Id: t.ID, Name: t.Name}
+					}
+					data[i].Tags = &summaries
+				}
+			}
+		}
 	}
 
 	resp := PhotoListResponse{
@@ -90,8 +122,19 @@ func (s *Server) GetPhoto(w http.ResponseWriter, r *http.Request, id int64) {
 		return
 	}
 
+	detail := photoToDetail(p)
+
+	tags, err := s.tags.ListTagsForPhoto(r.Context(), p.ID)
+	if err == nil && len(tags) > 0 {
+		tagResponses := make([]TagResponse, len(tags))
+		for i, t := range tags {
+			tagResponses[i] = tagToResponse(t)
+		}
+		detail.Tags = &tagResponses
+	}
+
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(photoToDetail(p))
+	_ = json.NewEncoder(w).Encode(detail)
 }
 
 func photoToListItem(p photo.Photo) PhotoListItem {
