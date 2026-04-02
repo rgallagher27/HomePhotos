@@ -60,6 +60,7 @@ HomePhotos/
 │   ├── config/           # Config via envconfig
 │   ├── domain/user/      # User entity, repository interface, errors
 │   ├── domain/photo/     # Photo entity, repository interface, errors
+│   ├── domain/tag/       # Tag/TagGroup entities, repository interface, errors
 │   ├── services/auth/    # Auth service (register, login, JWT)
 │   ├── services/scanner/ # Photo scanner, EXIF extraction, scheduler
 │   ├── services/imaging/ # Image decode, resize, orientation, RAW extraction
@@ -80,4 +81,4 @@ HomePhotos/
 
 ## Status
 
-Phases 1-3 are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, photo browsing APIs with cursor pagination, and thumbnail/preview generation with image serving. See [`docs/implementation.md`](docs/implementation.md) for full details.
+Phases 1-4 are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, photo browsing APIs with cursor pagination, thumbnail/preview generation with image serving, and tag-based photo organization with filtering. See [`docs/implementation.md`](docs/implementation.md) for full details.

@@ -14,6 +14,10 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 
 Thumbnail/preview generation (background + on-demand) and image serving endpoint are fully implemented.
 
+### Phase 4: Tagging — Complete
+
+Tag-based photo organization: tags, tag groups, photo-tag associations, CRUD APIs, bulk tagging, and tag-based filtering on the photo list endpoint.
+
 ### Backend (Go)
 
 | Component | Path | Status |
@@ -21,13 +25,15 @@ Thumbnail/preview generation (background + on-demand) and image serving endpoint
 | Entry point | `backend/cmd/server/main.go` | Done — signal handling, graceful shutdown, envconfig |
 | Config | `backend/config/config.go` | Done — `HOMEPHOTOS_` prefix, all env vars defined |
 | SQLite connection | `backend/database/sqlite/sqlite.go` | Done — WAL mode, foreign keys, busy timeout, single writer |
-| Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users), `000003_add_photos_table` (photos with EXIF columns) |
+| Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users), `000003_add_photos_table` (photos with EXIF columns), `000004_add_tagging_tables` (tag_groups, tags, photo_tags) |
 | sqlc | `backend/database/sqlite/sqlc.yaml` | Done — configured for SQLite, generates to `database/sqlite/` |
-| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (CreatePhoto, UpdatePhoto, GetPhotoByID, GetPhotoByFilePath, ListAllFingerprints, ListPendingPhotos, UpdatePhotoCacheStatus) |
+| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (7 queries), `tags.sql` (tag groups CRUD, tags CRUD with joins, photo-tag associations) |
 | User repository | `backend/database/sqlite/user_repository.go` | Done — implements `user.Repository`, maps sqlc models to domain entities |
-| Photo repository | `backend/database/sqlite/photo_repository.go` | Done — implements `photo.Repository`, cursor pagination with dynamic SQL, orphan cleanup, list pending, update cache status |
+| Photo repository | `backend/database/sqlite/photo_repository.go` | Done — implements `photo.Repository`, cursor pagination with dynamic SQL, orphan cleanup, list pending, update cache status, tag filtering (OR/AND modes) |
+| Tag repository | `backend/database/sqlite/tag_repository.go` | Done — implements `tag.Repository`, tags/groups/photo-tags CRUD, batch operations, ListTagsForPhotos |
 | User domain | `backend/domain/user/` | Done — `User` entity, `Repository` interface, `Role` type, sentinel errors |
-| Photo domain | `backend/domain/photo/` | Done — `Photo` entity with EXIF fields, `Repository` interface with `ListParams`/`ListResult`, sentinel errors |
+| Photo domain | `backend/domain/photo/` | Done — `Photo` entity with EXIF fields, `Repository` interface with `ListParams`/`ListResult` (includes TagIDs/TagMode), sentinel errors |
+| Tag domain | `backend/domain/tag/` | Done — `Tag` and `TagGroup` entities, `Repository` interface, sentinel errors |
 | Auth service | `backend/services/auth/service.go` | Done — Register (bcrypt, first-user-admin), Login (verify + JWT) |
 | Token service | `backend/services/auth/token.go` | Done — HMAC-SHA256 JWT, configurable expiry |
 | Auth errors | `backend/services/auth/errors.go` | Done — `ErrInvalidCredentials`, `ErrRegistrationClosed` |
@@ -39,13 +45,15 @@ Thumbnail/preview generation (background + on-demand) and image serving endpoint
 | RAW extraction | `backend/services/imaging/raw.go` | Done — pure Go TIFF/IFD parser, extracts embedded JPEG from ARW/DNG |
 | Cache service | `backend/services/cache/service.go` | Done — content-addressable cache, generate thumb+preview, on-demand generation |
 | Cache worker pool | `backend/services/cache/worker.go` | Done — background batch processing of pending photos |
-| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, user, photo, scanner, and image endpoints |
-| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository, photo repository, scanner service, cache service |
+| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, user, photo, scanner, image, tag, and photo-tag endpoints |
+| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository, photo repository, tag repository, scanner service, cache service |
 | Server init | `backend/ports/rest/rest.go` | Done — builds services, wires JWT auth, sets up middleware stack, constructs scanner and cache |
 | Health handler | `backend/ports/rest/health_handlers.go` | Done — pings DB, returns ok/degraded |
 | Auth handlers | `backend/ports/rest/auth_handlers.go` | Done — register, login, me endpoints |
 | User handlers | `backend/ports/rest/user_handlers.go` | Done — list users, update role (admin only) |
-| Photo handlers | `backend/ports/rest/photo_handlers.go` | Done — list photos (cursor pagination, filters), get photo detail with full EXIF |
+| Photo handlers | `backend/ports/rest/photo_handlers.go` | Done — list photos (cursor pagination, filters, tag filtering), get photo detail with full EXIF and tags |
+| Tag handlers | `backend/ports/rest/tag_handlers.go` | Done — CRUD for tags and tag groups (admin only for writes) |
+| Photo-tag handlers | `backend/ports/rest/photo_tag_handlers.go` | Done — assign tags, remove tag, bulk tag (auth required) |
 | Scanner handlers | `backend/ports/rest/scanner_handlers.go` | Done — trigger scan (admin), get scan status (admin) |
 | Image handlers | `backend/ports/rest/image_handlers.go` | Done — serve photo images (thumb/preview/full), on-demand generation, cache headers |
 | Auth middleware | `backend/ports/rest/auth_middleware.go` | Done — JWT validation (OAPI), context injection (HTTP middleware), `RequireAdmin` |
@@ -82,9 +90,9 @@ Thumbnail/preview generation (background + on-demand) and image serving endpoint
 
 | Component | Path | Status |
 |-----------|------|--------|
-| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, user, photo, scanner, and image endpoints |
-| Path definitions | `openapi/paths/` | Done — health, auth (register/login/me), users, photos (list/detail), scanner (run/status), image (serve) |
-| Schema definitions | `openapi/components/schemas/` | Done — auth, user, photo (list item, detail, list response), scanner (run/status responses), error |
+| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, user, photo, scanner, image, tag, and photo-tag endpoints |
+| Path definitions | `openapi/paths/` | Done — health, auth (register/login/me), users, photos (list/detail), scanner (run/status), image (serve), tags (CRUD), tag-groups (CRUD), photo-tags (assign/remove/bulk) |
+| Schema definitions | `openapi/components/schemas/` | Done — auth, user, photo (list item with tag summaries, detail with full tags, list response), scanner, tag (response, list, create/update), tag group, photo-tag (assign, bulk), error |
 | Error responses | `openapi/components/responses/` | Done — 400, 401, 403, 404, 409, 500 |
 | Bundled spec | `openapi.yaml` (root) | Generated — single-file version used by code generators |
 
@@ -102,13 +110,13 @@ Thumbnail/preview generation (background + on-demand) and image serving endpoint
 
 | Suite | Count | Coverage |
 |-------|-------|----------|
-| `database/sqlite` | 21 tests | User repository (8), photo repository (13): CRUD, cursor pagination, filters, orphan cleanup, list pending, update cache status |
+| `database/sqlite` | 35 tests | User repository (8), photo repository (16): CRUD, cursor pagination, filters, tag filtering (OR/AND/combined), orphan cleanup, list pending, update cache status. Tag repository (11): group CRUD, tag CRUD, duplicates, cascades, photo-tag operations, batch queries |
 | `services/auth` | 7 tests | Token: generate/validate, expired, invalid sig, malformed. Service: register/login |
-| `services/scanner` | 11 tests | EXIF extraction (4), scanner service (7): new/incremental/changed/orphaned files, concurrency, scheduling |
+| `services/scanner` | 14 tests | EXIF extraction (4), scanner service (10): new/incremental/changed/orphaned files, concurrency, scheduling |
 | `services/imaging` | 11 tests | Resize (3), orientation (1), encode roundtrip (1), decode (1), RAW extraction (3), edge cases (2) |
 | `services/cache` | 9 tests | Generate JPEG (1), corrupt file (1), has/path (1), cache dir layout (1), generate if needed (1), source reader (1), worker pool (2), context cancellation (1) |
-| `ports/rest` | 30 tests | Auth (8), users (7), photos (6), scanner (5), images (5): full endpoint coverage with auth checks |
-| **Total** | **89 tests** | |
+| `ports/rest` | 54 tests | Auth (8), users (7), photos (9), scanner (5), images (5), tags (13), photo-tags (9): full endpoint coverage with auth checks |
+| **Total** | **130 tests** | |
 
 ### Documentation
 
@@ -123,15 +131,6 @@ Thumbnail/preview generation (background + on-demand) and image serving endpoint
 ## What Needs To Be Built Next
 
 Ordered by dependency — earlier items unblock later ones.
-
-### Phase 4: Tagging
-
-Organization layer.
-
-1. **Tags migration** — `tags`, `tag_groups`, `photo_tags` tables (see `docs/06-feature-tagging.md`)
-2. **Tag domain + repository + service**
-3. **Tag API** — CRUD for tags and tag groups, photo tagging, bulk tagging
-4. **Photo filtering by tags** — extend `GET /photos` with `tags` and `tag_mode` query params
 
 ### Phase 5: Frontend
 
