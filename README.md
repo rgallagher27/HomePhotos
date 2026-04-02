@@ -81,4 +81,4 @@ HomePhotos/
 
 ## Status
 
-Phases 1-4 are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, photo browsing APIs with cursor pagination, thumbnail/preview generation with image serving, and tag-based photo organization with filtering. See [`docs/implementation.md`](docs/implementation.md) for full details.
+Phases 1-5 are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, photo browsing APIs with cursor pagination, thumbnail/preview generation with image serving, and tag-based photo organization with filtering. The SvelteKit frontend includes auth pages, responsive photo grid with infinite scroll and date grouping, photo detail with EXIF metadata and tag editing, tag sidebar with filter-by-tag support, and an admin panel with scanner controls, user management, and tag management. See [`docs/implementation.md`](docs/implementation.md) for full details.
