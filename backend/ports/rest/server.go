@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/rgallagher/homephotos/domain/photo"
+	"github.com/rgallagher/homephotos/domain/tag"
 	"github.com/rgallagher/homephotos/domain/user"
 	"github.com/rgallagher/homephotos/services/auth"
 	"github.com/rgallagher/homephotos/services/cache"
@@ -16,17 +17,19 @@ type Server struct {
 	tokens  *auth.TokenService
 	users   user.Repository
 	photos  photo.Repository
+	tags    tag.Repository
 	scanner *scanner.Service
 	cache   *cache.Service
 }
 
-func NewServer(db *sql.DB, authSvc *auth.Service, tokens *auth.TokenService, users user.Repository, photos photo.Repository, scannerSvc *scanner.Service, cacheSvc *cache.Service) *Server {
+func NewServer(db *sql.DB, authSvc *auth.Service, tokens *auth.TokenService, users user.Repository, photos photo.Repository, tags tag.Repository, scannerSvc *scanner.Service, cacheSvc *cache.Service) *Server {
 	return &Server{
 		db:      db,
 		auth:    authSvc,
 		tokens:  tokens,
 		users:   users,
 		photos:  photos,
+		tags:    tags,
 		scanner: scannerSvc,
 		cache:   cacheSvc,
 	}

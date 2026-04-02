@@ -39,10 +39,11 @@ func initServer(cfg config.Config, db *sql.DB) (*http.Server, *scanner.Service, 
 	userRepo := sqlite.NewUserRepository(db)
 	authSvc := auth.New(userRepo, tokens, 12, cfg.RegistrationOpen)
 	photoRepo := sqlite.NewPhotoRepository(db)
+	tagRepo := sqlite.NewTagRepository(db)
 	scannerSvc := scanner.New(photoRepo, cfg.SourcePath)
 	cacheSvc := cache.New(photoRepo, cfg.SourcePath, cfg.CachePath)
 
-	server := NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc, cacheSvc)
+	server := NewServer(db, authSvc, tokens, userRepo, photoRepo, tagRepo, scannerSvc, cacheSvc)
 
 	h := HandlerWithOptions(server, StdHTTPServerOptions{
 		BaseRouter: http.NewServeMux(),

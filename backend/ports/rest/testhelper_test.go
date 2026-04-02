@@ -21,6 +21,7 @@ import (
 type testEnv struct {
 	server    *Server
 	photos    *sqlite.PhotoRepository
+	tags      *sqlite.TagRepository
 	sourceDir string
 	cacheDir  string
 }
@@ -33,14 +34,16 @@ func newTestEnv(t *testing.T, registrationOpen bool) *testEnv {
 	userRepo := sqlite.NewUserRepository(db)
 	authSvc := auth.New(userRepo, tokens, 4, registrationOpen)
 	photoRepo := sqlite.NewPhotoRepository(db)
+	tagRepo := sqlite.NewTagRepository(db)
 	sourceDir := t.TempDir()
 	cacheDir := t.TempDir()
 	scannerSvc := scanner.New(photoRepo, sourceDir)
 	cacheSvc := cache.New(photoRepo, sourceDir, cacheDir)
 
 	return &testEnv{
-		server:    NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc, cacheSvc),
+		server:    NewServer(db, authSvc, tokens, userRepo, photoRepo, tagRepo, scannerSvc, cacheSvc),
 		photos:    photoRepo,
+		tags:      tagRepo,
 		sourceDir: sourceDir,
 		cacheDir:  cacheDir,
 	}
