@@ -14,23 +14,24 @@ import (
 	"github.com/rgallagher/homephotos/config"
 	"github.com/rgallagher/homephotos/database/sqlite"
 	"github.com/rgallagher/homephotos/services/auth"
+	"github.com/rgallagher/homephotos/services/cache"
 	"github.com/rgallagher/homephotos/services/scanner"
 	sloghttp "github.com/samber/slog-http"
 )
 
-func NewRestServer(ctx context.Context, cfg config.Config) (*http.Server, *scanner.Service, error) {
+func NewRestServer(ctx context.Context, cfg config.Config) (*http.Server, *scanner.Service, *cache.Service, error) {
 	db, err := sqlite.Open(cfg.DBPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open database: %w", err)
+		return nil, nil, nil, fmt.Errorf("open database: %w", err)
 	}
 
 	return initServer(cfg, db)
 }
 
-func initServer(cfg config.Config, db *sql.DB) (*http.Server, *scanner.Service, error) {
+func initServer(cfg config.Config, db *sql.DB) (*http.Server, *scanner.Service, *cache.Service, error) {
 	swagger, err := GetSwagger()
 	if err != nil {
-		return nil, nil, fmt.Errorf("get swagger: %w", err)
+		return nil, nil, nil, fmt.Errorf("get swagger: %w", err)
 	}
 	swagger.Servers = nil
 
@@ -39,8 +40,9 @@ func initServer(cfg config.Config, db *sql.DB) (*http.Server, *scanner.Service, 
 	authSvc := auth.New(userRepo, tokens, 12, cfg.RegistrationOpen)
 	photoRepo := sqlite.NewPhotoRepository(db)
 	scannerSvc := scanner.New(photoRepo, cfg.SourcePath)
+	cacheSvc := cache.New(photoRepo, cfg.SourcePath, cfg.CachePath)
 
-	server := NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc)
+	server := NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc, cacheSvc)
 
 	h := HandlerWithOptions(server, StdHTTPServerOptions{
 		BaseRouter: http.NewServeMux(),
@@ -66,5 +68,5 @@ func initServer(cfg config.Config, db *sql.DB) (*http.Server, *scanner.Service, 
 	return &http.Server{
 		Handler: handler,
 		Addr:    net.JoinHostPort(cfg.Host, cfg.Port),
-	}, scannerSvc, nil
+	}, scannerSvc, cacheSvc, nil
 }

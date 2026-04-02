@@ -6,6 +6,7 @@ import (
 	"github.com/rgallagher/homephotos/domain/photo"
 	"github.com/rgallagher/homephotos/domain/user"
 	"github.com/rgallagher/homephotos/services/auth"
+	"github.com/rgallagher/homephotos/services/cache"
 	"github.com/rgallagher/homephotos/services/scanner"
 )
 
@@ -16,9 +17,10 @@ type Server struct {
 	users   user.Repository
 	photos  photo.Repository
 	scanner *scanner.Service
+	cache   *cache.Service
 }
 
-func NewServer(db *sql.DB, authSvc *auth.Service, tokens *auth.TokenService, users user.Repository, photos photo.Repository, scannerSvc *scanner.Service) *Server {
+func NewServer(db *sql.DB, authSvc *auth.Service, tokens *auth.TokenService, users user.Repository, photos photo.Repository, scannerSvc *scanner.Service, cacheSvc *cache.Service) *Server {
 	return &Server{
 		db:      db,
 		auth:    authSvc,
@@ -26,6 +28,7 @@ func NewServer(db *sql.DB, authSvc *auth.Service, tokens *auth.TokenService, use
 		users:   users,
 		photos:  photos,
 		scanner: scannerSvc,
+		cache:   cacheSvc,
 	}
 }
 

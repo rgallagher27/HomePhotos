@@ -12,6 +12,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rgallagher/homephotos/config"
 	"github.com/rgallagher/homephotos/ports/rest"
+	"github.com/rgallagher/homephotos/services/cache"
 	"github.com/rgallagher/homephotos/services/scanner"
 )
 
@@ -34,7 +35,7 @@ func main() {
 }
 
 func run(ctx context.Context, cfg config.Config) error {
-	httpServer, scannerSvc, err := rest.NewRestServer(ctx, cfg)
+	httpServer, scannerSvc, cacheSvc, err := rest.NewRestServer(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("setup server: %w", err)
 	}
@@ -42,6 +43,10 @@ func run(ctx context.Context, cfg config.Config) error {
 	// Start scanner scheduler in background
 	sched := scanner.NewScheduler(scannerSvc, cfg.ScanInterval, cfg.ScanOnStartup)
 	go sched.Start(ctx)
+
+	// Start cache worker pool in background
+	wp := cache.NewWorkerPool(cacheSvc, cfg.CacheWorkers)
+	go wp.Start(ctx)
 
 	serverErr := make(chan error, 1)
 

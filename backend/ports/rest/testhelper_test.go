@@ -14,21 +14,42 @@ import (
 
 	"github.com/rgallagher/homephotos/database/sqlite"
 	"github.com/rgallagher/homephotos/services/auth"
+	"github.com/rgallagher/homephotos/services/cache"
 	"github.com/rgallagher/homephotos/services/scanner"
 )
 
-// testServer creates a Server backed by an in-memory SQLite database with migrations applied.
-func testServer(t *testing.T, registrationOpen bool) *Server {
+type testEnv struct {
+	server    *Server
+	photos    *sqlite.PhotoRepository
+	sourceDir string
+	cacheDir  string
+}
+
+func newTestEnv(t *testing.T, registrationOpen bool) *testEnv {
 	t.Helper()
 
 	db := setupTestDB(t)
 	tokens := auth.NewTokenService("test-secret", time.Hour)
 	userRepo := sqlite.NewUserRepository(db)
-	authSvc := auth.New(userRepo, tokens, 4, registrationOpen) // cost 4 for fast tests
+	authSvc := auth.New(userRepo, tokens, 4, registrationOpen)
 	photoRepo := sqlite.NewPhotoRepository(db)
-	scannerSvc := scanner.New(photoRepo, t.TempDir())
+	sourceDir := t.TempDir()
+	cacheDir := t.TempDir()
+	scannerSvc := scanner.New(photoRepo, sourceDir)
+	cacheSvc := cache.New(photoRepo, sourceDir, cacheDir)
 
-	return NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc)
+	return &testEnv{
+		server:    NewServer(db, authSvc, tokens, userRepo, photoRepo, scannerSvc, cacheSvc),
+		photos:    photoRepo,
+		sourceDir: sourceDir,
+		cacheDir:  cacheDir,
+	}
+}
+
+// testServer creates a Server backed by an in-memory SQLite database with migrations applied.
+func testServer(t *testing.T, registrationOpen bool) *Server {
+	t.Helper()
+	return newTestEnv(t, registrationOpen).server
 }
 
 func setupTestDB(t *testing.T) *sql.DB {

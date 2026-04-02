@@ -1,0 +1,36 @@
+get:
+  operationId: getPhotoImage
+  tags:
+    - Photos
+  summary: Get photo image
+  description: Serve a photo image variant (thumbnail, preview, or full resolution)
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: size
+      in: query
+      required: true
+      schema:
+        type: string
+        enum:
+          - thumb
+          - preview
+          - full
+  responses:
+    '200':
+      description: Image binary
+      content:
+        image/jpeg:
+          schema:
+            type: string
+            format: binary
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

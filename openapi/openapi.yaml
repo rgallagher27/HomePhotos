@@ -23,6 +23,8 @@ paths:
     $ref: paths/photos.yaml
   /api/v1/photos/{id}:
     $ref: paths/photos_id.yaml
+  /api/v1/photos/{id}/image:
+    $ref: paths/photos_id_image.yaml
   /api/v1/scanner/run:
     $ref: paths/scanner_run.yaml
   /api/v1/scanner/status:
