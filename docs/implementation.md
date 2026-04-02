@@ -10,6 +10,10 @@ User authentication and role-based access control are fully implemented.
 
 Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 
+### Phase 3: Caching & Thumbnails — Complete
+
+Thumbnail/preview generation (background + on-demand) and image serving endpoint are fully implemented.
+
 ### Backend (Go)
 
 | Component | Path | Status |
@@ -19,9 +23,9 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 | SQLite connection | `backend/database/sqlite/sqlite.go` | Done — WAL mode, foreign keys, busy timeout, single writer |
 | Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users), `000003_add_photos_table` (photos with EXIF columns) |
 | sqlc | `backend/database/sqlite/sqlc.yaml` | Done — configured for SQLite, generates to `database/sqlite/` |
-| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (CreatePhoto, UpdatePhoto, GetPhotoByID, GetPhotoByFilePath, ListAllFingerprints) |
+| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (CreatePhoto, UpdatePhoto, GetPhotoByID, GetPhotoByFilePath, ListAllFingerprints, ListPendingPhotos, UpdatePhotoCacheStatus) |
 | User repository | `backend/database/sqlite/user_repository.go` | Done — implements `user.Repository`, maps sqlc models to domain entities |
-| Photo repository | `backend/database/sqlite/photo_repository.go` | Done — implements `photo.Repository`, cursor pagination with dynamic SQL, orphan cleanup |
+| Photo repository | `backend/database/sqlite/photo_repository.go` | Done — implements `photo.Repository`, cursor pagination with dynamic SQL, orphan cleanup, list pending, update cache status |
 | User domain | `backend/domain/user/` | Done — `User` entity, `Repository` interface, `Role` type, sentinel errors |
 | Photo domain | `backend/domain/photo/` | Done — `Photo` entity with EXIF fields, `Repository` interface with `ListParams`/`ListResult`, sentinel errors |
 | Auth service | `backend/services/auth/service.go` | Done — Register (bcrypt, first-user-admin), Login (verify + JWT) |
@@ -30,14 +34,20 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 | Scanner service | `backend/services/scanner/service.go` | Done — walks source directory, diffs fingerprints, extracts EXIF, upserts photos, deletes orphans |
 | Scanner scheduler | `backend/services/scanner/scheduler.go` | Done — background goroutine with configurable interval and on-startup scan |
 | EXIF extraction | `backend/services/scanner/exif.go` | Done — extracts camera, lens, GPS, exposure data via `rwcarlsen/goexif` |
-| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, user, photo, and scanner endpoints |
-| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository, photo repository, scanner service |
-| Server init | `backend/ports/rest/rest.go` | Done — builds services, wires JWT auth, sets up middleware stack, constructs scanner |
+| Image processing | `backend/services/imaging/imaging.go` | Done — decode (JPEG/PNG/TIFF/RAW), resize via Lanczos, JPEG encode |
+| EXIF orientation | `backend/services/imaging/orientation.go` | Done — applies EXIF orientation transforms (values 1-8) |
+| RAW extraction | `backend/services/imaging/raw.go` | Done — pure Go TIFF/IFD parser, extracts embedded JPEG from ARW/DNG |
+| Cache service | `backend/services/cache/service.go` | Done — content-addressable cache, generate thumb+preview, on-demand generation |
+| Cache worker pool | `backend/services/cache/worker.go` | Done — background batch processing of pending photos |
+| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, user, photo, scanner, and image endpoints |
+| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository, photo repository, scanner service, cache service |
+| Server init | `backend/ports/rest/rest.go` | Done — builds services, wires JWT auth, sets up middleware stack, constructs scanner and cache |
 | Health handler | `backend/ports/rest/health_handlers.go` | Done — pings DB, returns ok/degraded |
 | Auth handlers | `backend/ports/rest/auth_handlers.go` | Done — register, login, me endpoints |
 | User handlers | `backend/ports/rest/user_handlers.go` | Done — list users, update role (admin only) |
 | Photo handlers | `backend/ports/rest/photo_handlers.go` | Done — list photos (cursor pagination, filters), get photo detail with full EXIF |
 | Scanner handlers | `backend/ports/rest/scanner_handlers.go` | Done — trigger scan (admin), get scan status (admin) |
+| Image handlers | `backend/ports/rest/image_handlers.go` | Done — serve photo images (thumb/preview/full), on-demand generation, cache headers |
 | Auth middleware | `backend/ports/rest/auth_middleware.go` | Done — JWT validation (OAPI), context injection (HTTP middleware), `RequireAdmin` |
 | Middleware | `backend/ports/rest/middleware.go` | Done — CORS, JSON content-type |
 | Error helpers | `backend/ports/rest/error.go` | Done — nested `{"error": {"code": "...", "message": "..."}}` format with SCREAMING_SNAKE codes |
@@ -54,9 +64,7 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 - `golang-jwt/jwt/v5` — JWT signing/verification
 - `golang.org/x/crypto/bcrypt` — password hashing
 - `rwcarlsen/goexif` — EXIF metadata extraction
-
-**Not yet installed (needed for later phases):**
-- `disintegration/imaging` — image resizing
+- `disintegration/imaging` — image resizing, orientation transforms
 
 ### Frontend (SvelteKit)
 
@@ -74,8 +82,8 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 
 | Component | Path | Status |
 |-----------|------|--------|
-| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, user, photo, and scanner endpoints |
-| Path definitions | `openapi/paths/` | Done — health, auth (register/login/me), users, photos (list/detail), scanner (run/status) |
+| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, user, photo, scanner, and image endpoints |
+| Path definitions | `openapi/paths/` | Done — health, auth (register/login/me), users, photos (list/detail), scanner (run/status), image (serve) |
 | Schema definitions | `openapi/components/schemas/` | Done — auth, user, photo (list item, detail, list response), scanner (run/status responses), error |
 | Error responses | `openapi/components/responses/` | Done — 400, 401, 403, 404, 409, 500 |
 | Bundled spec | `openapi.yaml` (root) | Generated — single-file version used by code generators |
@@ -94,11 +102,13 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 
 | Suite | Count | Coverage |
 |-------|-------|----------|
-| `database/sqlite` | 19 tests | User repository (8), photo repository (11): CRUD, cursor pagination, filters, orphan cleanup |
+| `database/sqlite` | 21 tests | User repository (8), photo repository (13): CRUD, cursor pagination, filters, orphan cleanup, list pending, update cache status |
 | `services/auth` | 7 tests | Token: generate/validate, expired, invalid sig, malformed. Service: register/login |
 | `services/scanner` | 11 tests | EXIF extraction (4), scanner service (7): new/incremental/changed/orphaned files, concurrency, scheduling |
-| `ports/rest` | 25 tests | Auth (8), users (7), photos (6), scanner (5): full endpoint coverage with auth checks |
-| **Total** | **62 tests** | |
+| `services/imaging` | 11 tests | Resize (3), orientation (1), encode roundtrip (1), decode (1), RAW extraction (3), edge cases (2) |
+| `services/cache` | 9 tests | Generate JPEG (1), corrupt file (1), has/path (1), cache dir layout (1), generate if needed (1), source reader (1), worker pool (2), context cancellation (1) |
+| `ports/rest` | 30 tests | Auth (8), users (7), photos (6), scanner (5), images (5): full endpoint coverage with auth checks |
+| **Total** | **89 tests** | |
 
 ### Documentation
 
@@ -113,15 +123,6 @@ Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
 ## What Needs To Be Built Next
 
 Ordered by dependency — earlier items unblock later ones.
-
-### Phase 3: Caching & Thumbnails
-
-Makes browsing fast.
-
-1. **Image processor** — extract embedded JPEG from ARW (LibRaw/dcraw), resize with `disintegration/imaging`
-2. **Cache service** — content-addressable storage (`cache/{hash-prefix}/{hash}/{size}.jpg`)
-3. **Image serving** — `GET /photos/:id/image?size=thumb|preview|full` with aggressive cache headers
-4. **Background workers** — bounded goroutine pool for thumbnail generation, backpressure under API load
 
 ### Phase 4: Tagging
 

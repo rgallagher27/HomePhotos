@@ -62,6 +62,8 @@ HomePhotos/
 │   ├── domain/photo/     # Photo entity, repository interface, errors
 │   ├── services/auth/    # Auth service (register, login, JWT)
 │   ├── services/scanner/ # Photo scanner, EXIF extraction, scheduler
+│   ├── services/imaging/ # Image decode, resize, orientation, RAW extraction
+│   ├── services/cache/   # Thumbnail/preview cache, background worker pool
 │   ├── ports/rest/       # HTTP handlers, middleware, generated server
 │   ├── database/sqlite/  # SQLite, migrations, sqlc queries, repositories
 │   └── Makefile
@@ -78,4 +80,4 @@ HomePhotos/
 
 ## Status
 
-Phase 1 (Auth & Users) and Phase 2 (Photo Scanning & Indexing) are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, and photo browsing APIs with cursor pagination. See [`docs/implementation.md`](docs/implementation.md) for full details.
+Phases 1-3 are complete. The backend has user auth, role-based access control, filesystem scanning with EXIF extraction, photo browsing APIs with cursor pagination, and thumbnail/preview generation with image serving. See [`docs/implementation.md`](docs/implementation.md) for full details.
