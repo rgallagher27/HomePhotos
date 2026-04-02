@@ -30,8 +30,8 @@ frontend/src/lib/api/gen/
 # OS
 .DS_Store
 
-# Cache
-cache/
+# Cache (runtime cache directory at project root)
+/cache/
 
 # Go
 backend/bin/
