@@ -58,6 +58,20 @@ get:
       schema:
         type: string
       description: Filter by file format (e.g. arw, jpg)
+    - name: tags
+      in: query
+      schema:
+        type: string
+      description: Comma-separated tag IDs to filter by
+    - name: tag_mode
+      in: query
+      schema:
+        type: string
+        enum:
+          - and
+          - or
+        default: or
+      description: Tag filter mode — and (all tags required) or or (any tag matches)
   responses:
     '200':
       description: List of photos

@@ -1,0 +1,24 @@
+type: object
+required:
+  - id
+  - name
+  - created_at
+properties:
+  id:
+    type: integer
+    format: int64
+  name:
+    type: string
+  color:
+    type: string
+    nullable: true
+  group_id:
+    type: integer
+    format: int64
+    nullable: true
+  group_name:
+    type: string
+    nullable: true
+  created_at:
+    type: string
+    format: date-time

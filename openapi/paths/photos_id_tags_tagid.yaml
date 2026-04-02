@@ -1,0 +1,26 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+      format: int64
+  - name: tagId
+    in: path
+    required: true
+    schema:
+      type: integer
+      format: int64
+delete:
+  operationId: deletePhotoTag
+  tags:
+    - Photos
+  summary: Remove tag from photo
+  description: Remove a tag association from a photo. Idempotent.
+  responses:
+    '204':
+      description: Tag removed
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

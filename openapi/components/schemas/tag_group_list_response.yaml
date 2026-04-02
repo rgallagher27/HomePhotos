@@ -1,0 +1,8 @@
+type: object
+required:
+  - data
+properties:
+  data:
+    type: array
+    items:
+      $ref: 'tag_group_response.yaml'

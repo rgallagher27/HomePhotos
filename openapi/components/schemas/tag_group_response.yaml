@@ -1,0 +1,17 @@
+type: object
+required:
+  - id
+  - name
+  - sort_order
+  - created_at
+properties:
+  id:
+    type: integer
+    format: int64
+  name:
+    type: string
+  sort_order:
+    type: integer
+  created_at:
+    type: string
+    format: date-time

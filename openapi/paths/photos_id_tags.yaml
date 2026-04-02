@@ -1,0 +1,26 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+      format: int64
+post:
+  operationId: postPhotoTags
+  tags:
+    - Photos
+  summary: Assign tags to photo
+  description: Add tags to a photo. Idempotent — re-adding an existing tag has no effect.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/assign_tags_request.yaml'
+  responses:
+    '204':
+      description: Tags assigned
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

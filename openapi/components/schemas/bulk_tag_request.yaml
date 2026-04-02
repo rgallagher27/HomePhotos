@@ -1,0 +1,15 @@
+type: object
+required:
+  - photo_ids
+  - tag_ids
+properties:
+  photo_ids:
+    type: array
+    items:
+      type: integer
+      format: int64
+  tag_ids:
+    type: array
+    items:
+      type: integer
+      format: int64

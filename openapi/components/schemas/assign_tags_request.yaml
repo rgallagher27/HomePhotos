@@ -1,0 +1,9 @@
+type: object
+required:
+  - tag_ids
+properties:
+  tag_ids:
+    type: array
+    items:
+      type: integer
+      format: int64

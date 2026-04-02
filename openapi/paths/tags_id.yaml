@@ -1,0 +1,49 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+      format: int64
+put:
+  operationId: putTag
+  tags:
+    - Tags
+  summary: Update tag
+  description: Update a tag's name, color, or group. Admin only.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/update_tag_request.yaml'
+  responses:
+    '200':
+      description: Tag updated
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    '409':
+      $ref: '../components/responses/409.yaml'
+delete:
+  operationId: deleteTag
+  tags:
+    - Tags
+  summary: Delete tag
+  description: Delete a tag. Cascades to photo-tag associations. Admin only.
+  responses:
+    '204':
+      description: Tag deleted
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

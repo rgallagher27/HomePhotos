@@ -25,6 +25,20 @@ paths:
     $ref: paths/photos_id.yaml
   /api/v1/photos/{id}/image:
     $ref: paths/photos_id_image.yaml
+  /api/v1/tags:
+    $ref: paths/tags.yaml
+  /api/v1/tags/{id}:
+    $ref: paths/tags_id.yaml
+  /api/v1/tag-groups:
+    $ref: paths/tag_groups.yaml
+  /api/v1/tag-groups/{id}:
+    $ref: paths/tag_groups_id.yaml
+  /api/v1/photos/{id}/tags:
+    $ref: paths/photos_id_tags.yaml
+  /api/v1/photos/{id}/tags/{tagId}:
+    $ref: paths/photos_id_tags_tagid.yaml
+  /api/v1/photos/bulk-tag:
+    $ref: paths/photos_bulk_tag.yaml
   /api/v1/scanner/run:
     $ref: paths/scanner_run.yaml
   /api/v1/scanner/status:
@@ -47,5 +61,7 @@ tags:
     description: User management
   - name: Photos
     description: Photo browsing and metadata
+  - name: Tags
+    description: Tag and tag group management
   - name: Scanner
     description: Filesystem scanner

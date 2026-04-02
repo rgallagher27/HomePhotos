@@ -30,3 +30,7 @@ properties:
   thumb_url:
     type: string
     nullable: true
+  tags:
+    type: array
+    items:
+      $ref: 'photo_tag_summary.yaml'

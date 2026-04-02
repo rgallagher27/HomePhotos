@@ -1,0 +1,40 @@
+get:
+  operationId: getTags
+  tags:
+    - Tags
+  summary: List tags
+  description: List all tags with group information
+  responses:
+    '200':
+      description: List of tags
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_list_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+post:
+  operationId: postTag
+  tags:
+    - Tags
+  summary: Create tag
+  description: Create a new tag. Admin only.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/create_tag_request.yaml'
+  responses:
+    '201':
+      description: Tag created
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '409':
+      $ref: '../components/responses/409.yaml'

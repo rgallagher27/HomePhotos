@@ -1,0 +1,40 @@
+get:
+  operationId: getTagGroups
+  tags:
+    - Tags
+  summary: List tag groups
+  description: List all tag groups ordered by sort_order
+  responses:
+    '200':
+      description: List of tag groups
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_group_list_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+post:
+  operationId: postTagGroup
+  tags:
+    - Tags
+  summary: Create tag group
+  description: Create a new tag group. Admin only.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/create_tag_group_request.yaml'
+  responses:
+    '201':
+      description: Tag group created
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_group_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '409':
+      $ref: '../components/responses/409.yaml'

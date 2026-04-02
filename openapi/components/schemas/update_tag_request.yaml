@@ -1,0 +1,11 @@
+type: object
+properties:
+  name:
+    type: string
+  color:
+    type: string
+    nullable: true
+  group_id:
+    type: integer
+    format: int64
+    nullable: true

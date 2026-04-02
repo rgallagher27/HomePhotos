@@ -1,0 +1,49 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: integer
+      format: int64
+put:
+  operationId: putTagGroup
+  tags:
+    - Tags
+  summary: Update tag group
+  description: Update a tag group's name or sort order. Admin only.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/update_tag_group_request.yaml'
+  responses:
+    '200':
+      description: Tag group updated
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/tag_group_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'
+    '409':
+      $ref: '../components/responses/409.yaml'
+delete:
+  operationId: deleteTagGroup
+  tags:
+    - Tags
+  summary: Delete tag group
+  description: Delete a tag group. Tags in the group become ungrouped. Admin only.
+  responses:
+    '204':
+      description: Tag group deleted
+    '401':
+      $ref: '../components/responses/401.yaml'
+    '403':
+      $ref: '../components/responses/403.yaml'
+    '404':
+      $ref: '../components/responses/404.yaml'

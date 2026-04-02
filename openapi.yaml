@@ -17,6 +17,8 @@ tags:
     description: User management
   - name: Photos
     description: Photo browsing and metadata
+  - name: Tags
+    description: Tag and tag group management
   - name: Scanner
     description: Filesystem scanner
 paths:
@@ -219,6 +221,20 @@ paths:
           schema:
             type: string
           description: Filter by file format (e.g. arw, jpg)
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tag IDs to filter by
+        - name: tag_mode
+          in: query
+          schema:
+            type: string
+            enum:
+              - and
+              - or
+            default: or
+          description: Tag filter mode — and (all tags required) or or (any tag matches)
       responses:
         '200':
           description: List of photos
@@ -290,6 +306,262 @@ paths:
           $ref: '#/components/responses/401'
         '404':
           $ref: '#/components/responses/404'
+  /api/v1/tags:
+    get:
+      operationId: getTags
+      tags:
+        - Tags
+      summary: List tags
+      description: List all tags with group information
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_list_response'
+        '401':
+          $ref: '#/components/responses/401'
+    post:
+      operationId: postTag
+      tags:
+        - Tags
+      summary: Create tag
+      description: Create a new tag. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_tag_request'
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+  /api/v1/tags/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      operationId: putTag
+      tags:
+        - Tags
+      summary: Update tag
+      description: Update a tag's name, color, or group. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_tag_request'
+      responses:
+        '200':
+          description: Tag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+    delete:
+      operationId: deleteTag
+      tags:
+        - Tags
+      summary: Delete tag
+      description: Delete a tag. Cascades to photo-tag associations. Admin only.
+      responses:
+        '204':
+          description: Tag deleted
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  /api/v1/tag-groups:
+    get:
+      operationId: getTagGroups
+      tags:
+        - Tags
+      summary: List tag groups
+      description: List all tag groups ordered by sort_order
+      responses:
+        '200':
+          description: List of tag groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_group_list_response'
+        '401':
+          $ref: '#/components/responses/401'
+    post:
+      operationId: postTagGroup
+      tags:
+        - Tags
+      summary: Create tag group
+      description: Create a new tag group. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_tag_group_request'
+      responses:
+        '201':
+          description: Tag group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_group_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+  /api/v1/tag-groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    put:
+      operationId: putTagGroup
+      tags:
+        - Tags
+      summary: Update tag group
+      description: Update a tag group's name or sort order. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_tag_group_request'
+      responses:
+        '200':
+          description: Tag group updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tag_group_response'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+    delete:
+      operationId: deleteTagGroup
+      tags:
+        - Tags
+      summary: Delete tag group
+      description: Delete a tag group. Tags in the group become ungrouped. Admin only.
+      responses:
+        '204':
+          description: Tag group deleted
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  /api/v1/photos/{id}/tags:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: postPhotoTags
+      tags:
+        - Photos
+      summary: Assign tags to photo
+      description: Add tags to a photo. Idempotent — re-adding an existing tag has no effect.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/assign_tags_request'
+      responses:
+        '204':
+          description: Tags assigned
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+  /api/v1/photos/{id}/tags/{tagId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: tagId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    delete:
+      operationId: deletePhotoTag
+      tags:
+        - Photos
+      summary: Remove tag from photo
+      description: Remove a tag association from a photo. Idempotent.
+      responses:
+        '204':
+          description: Tag removed
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+  /api/v1/photos/bulk-tag:
+    post:
+      operationId: postBulkTag
+      tags:
+        - Photos
+      summary: Bulk assign tags
+      description: Assign tags to multiple photos at once. Idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulk_tag_request'
+      responses:
+        '204':
+          description: Tags assigned
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
   /api/v1/scanner/run:
     post:
       operationId: postScannerRun
@@ -459,6 +731,17 @@ components:
           enum:
             - admin
             - viewer
+    photo_tag_summary:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
     photo_list_item:
       type: object
       required:
@@ -492,6 +775,10 @@ components:
         thumb_url:
           type: string
           nullable: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/photo_tag_summary'
     photo_list_response:
       type: object
       required:
@@ -507,6 +794,31 @@ components:
           nullable: true
         has_more:
           type: boolean
+    tag_response:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+        group_id:
+          type: integer
+          format: int64
+          nullable: true
+        group_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
     photo_detail_response:
       type: object
       required:
@@ -589,6 +901,112 @@ components:
         full_url:
           type: string
           nullable: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/tag_response'
+    tag_list_response:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/tag_response'
+    create_tag_request:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+        group_id:
+          type: integer
+          format: int64
+    update_tag_request:
+      type: object
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+        group_id:
+          type: integer
+          format: int64
+          nullable: true
+    tag_group_response:
+      type: object
+      required:
+        - id
+        - name
+        - sort_order
+        - created_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        sort_order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    tag_group_list_response:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/tag_group_response'
+    create_tag_group_request:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        sort_order:
+          type: integer
+    update_tag_group_request:
+      type: object
+      properties:
+        name:
+          type: string
+        sort_order:
+          type: integer
+    assign_tags_request:
+      type: object
+      required:
+        - tag_ids
+      properties:
+        tag_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+    bulk_tag_request:
+      type: object
+      required:
+        - photo_ids
+        - tag_ids
+      properties:
+        photo_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+        tag_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
     scanner_run_response:
       type: object
       required:

@@ -1,0 +1,11 @@
+type: object
+required:
+  - name
+properties:
+  name:
+    type: string
+  color:
+    type: string
+  group_id:
+    type: integer
+    format: int64

@@ -1,0 +1,19 @@
+post:
+  operationId: postBulkTag
+  tags:
+    - Photos
+  summary: Bulk assign tags
+  description: Assign tags to multiple photos at once. Idempotent.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/bulk_tag_request.yaml'
+  responses:
+    '204':
+      description: Tags assigned
+    '400':
+      $ref: '../components/responses/400.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'
