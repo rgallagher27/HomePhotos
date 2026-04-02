@@ -6,6 +6,10 @@
 
 User authentication and role-based access control are fully implemented.
 
+### Phase 2: Photo Scanning & Indexing — Complete
+
+Photo scanning, EXIF extraction, and browsing APIs are fully implemented.
+
 ### Backend (Go)
 
 | Component | Path | Status |
@@ -13,20 +17,27 @@ User authentication and role-based access control are fully implemented.
 | Entry point | `backend/cmd/server/main.go` | Done — signal handling, graceful shutdown, envconfig |
 | Config | `backend/config/config.go` | Done — `HOMEPHOTOS_` prefix, all env vars defined |
 | SQLite connection | `backend/database/sqlite/sqlite.go` | Done — WAL mode, foreign keys, busy timeout, single writer |
-| Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users) |
+| Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users), `000003_add_photos_table` (photos with EXIF columns) |
 | sqlc | `backend/database/sqlite/sqlc.yaml` | Done — configured for SQLite, generates to `database/sqlite/` |
-| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (CreateUser, GetUserByUsername, GetUserByID, ListUsers, UpdateUserRole, UpdateLastLogin, CountUsers) |
+| sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (CreatePhoto, UpdatePhoto, GetPhotoByID, GetPhotoByFilePath, ListAllFingerprints) |
 | User repository | `backend/database/sqlite/user_repository.go` | Done — implements `user.Repository`, maps sqlc models to domain entities |
+| Photo repository | `backend/database/sqlite/photo_repository.go` | Done — implements `photo.Repository`, cursor pagination with dynamic SQL, orphan cleanup |
 | User domain | `backend/domain/user/` | Done — `User` entity, `Repository` interface, `Role` type, sentinel errors |
+| Photo domain | `backend/domain/photo/` | Done — `Photo` entity with EXIF fields, `Repository` interface with `ListParams`/`ListResult`, sentinel errors |
 | Auth service | `backend/services/auth/service.go` | Done — Register (bcrypt, first-user-admin), Login (verify + JWT) |
 | Token service | `backend/services/auth/token.go` | Done — HMAC-SHA256 JWT, configurable expiry |
 | Auth errors | `backend/services/auth/errors.go` | Done — `ErrInvalidCredentials`, `ErrRegistrationClosed` |
-| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, and user endpoints |
-| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository |
-| Server init | `backend/ports/rest/rest.go` | Done — builds services, wires JWT auth, sets up middleware stack |
+| Scanner service | `backend/services/scanner/service.go` | Done — walks source directory, diffs fingerprints, extracts EXIF, upserts photos, deletes orphans |
+| Scanner scheduler | `backend/services/scanner/scheduler.go` | Done — background goroutine with configurable interval and on-startup scan |
+| EXIF extraction | `backend/services/scanner/exif.go` | Done — extracts camera, lens, GPS, exposure data via `rwcarlsen/goexif` |
+| OpenAPI server | `backend/ports/rest/server.gen.go` | Generated — `ServerInterface` with health, auth, user, photo, and scanner endpoints |
+| Server struct | `backend/ports/rest/server.go` | Done — holds `*sql.DB`, auth service, token service, user repository, photo repository, scanner service |
+| Server init | `backend/ports/rest/rest.go` | Done — builds services, wires JWT auth, sets up middleware stack, constructs scanner |
 | Health handler | `backend/ports/rest/health_handlers.go` | Done — pings DB, returns ok/degraded |
 | Auth handlers | `backend/ports/rest/auth_handlers.go` | Done — register, login, me endpoints |
 | User handlers | `backend/ports/rest/user_handlers.go` | Done — list users, update role (admin only) |
+| Photo handlers | `backend/ports/rest/photo_handlers.go` | Done — list photos (cursor pagination, filters), get photo detail with full EXIF |
+| Scanner handlers | `backend/ports/rest/scanner_handlers.go` | Done — trigger scan (admin), get scan status (admin) |
 | Auth middleware | `backend/ports/rest/auth_middleware.go` | Done — JWT validation (OAPI), context injection (HTTP middleware), `RequireAdmin` |
 | Middleware | `backend/ports/rest/middleware.go` | Done — CORS, JSON content-type |
 | Error helpers | `backend/ports/rest/error.go` | Done — nested `{"error": {"code": "...", "message": "..."}}` format with SCREAMING_SNAKE codes |
@@ -42,10 +53,10 @@ User authentication and role-based access control are fully implemented.
 - `golang-migrate/migrate/v4` — database migrations (CLI only)
 - `golang-jwt/jwt/v5` — JWT signing/verification
 - `golang.org/x/crypto/bcrypt` — password hashing
+- `rwcarlsen/goexif` — EXIF metadata extraction
 
 **Not yet installed (needed for later phases):**
 - `disintegration/imaging` — image resizing
-- `rwcarlsen/goexif` — EXIF metadata extraction
 
 ### Frontend (SvelteKit)
 
@@ -63,10 +74,10 @@ User authentication and role-based access control are fully implemented.
 
 | Component | Path | Status |
 |-----------|------|--------|
-| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, and user endpoints |
-| Path definitions | `openapi/paths/` | Done — `health.yaml`, `auth_register.yaml`, `auth_login.yaml`, `auth_me.yaml`, `users.yaml`, `users_id_role.yaml` |
-| Schema definitions | `openapi/components/schemas/` | Done — `health_response`, `error` (nested), `register_request`, `login_request`, `auth_response`, `user_response`, `user_list_response`, `update_role_request` |
-| Error responses | `openapi/components/responses/` | Done — 400, 401, 403, 404, 500 |
+| Split spec (source of truth) | `openapi/openapi.yaml` | Done — health, auth, user, photo, and scanner endpoints |
+| Path definitions | `openapi/paths/` | Done — health, auth (register/login/me), users, photos (list/detail), scanner (run/status) |
+| Schema definitions | `openapi/components/schemas/` | Done — auth, user, photo (list item, detail, list response), scanner (run/status responses), error |
+| Error responses | `openapi/components/responses/` | Done — 400, 401, 403, 404, 409, 500 |
 | Bundled spec | `openapi.yaml` (root) | Generated — single-file version used by code generators |
 
 ### Infrastructure
@@ -83,10 +94,11 @@ User authentication and role-based access control are fully implemented.
 
 | Suite | Count | Coverage |
 |-------|-------|----------|
-| `database/sqlite` | 8 tests | User repository: create, duplicate, get by username/ID, list, update role/last login, count |
-| `services/auth` | 7 tests | Token: generate/validate, expired, invalid sig, malformed. Service: register (admin/viewer/closed/duplicate), login (valid/wrong/unknown) |
-| `ports/rest` | 22 tests | Error format, context helpers, RequireAdmin, auth handlers (register/login/me), user handlers (list/update role), full integration flow |
-| **Total** | **37 tests** | |
+| `database/sqlite` | 19 tests | User repository (8), photo repository (11): CRUD, cursor pagination, filters, orphan cleanup |
+| `services/auth` | 7 tests | Token: generate/validate, expired, invalid sig, malformed. Service: register/login |
+| `services/scanner` | 11 tests | EXIF extraction (4), scanner service (7): new/incremental/changed/orphaned files, concurrency, scheduling |
+| `ports/rest` | 25 tests | Auth (8), users (7), photos (6), scanner (5): full endpoint coverage with auth checks |
+| **Total** | **62 tests** | |
 
 ### Documentation
 
@@ -101,17 +113,6 @@ User authentication and role-based access control are fully implemented.
 ## What Needs To Be Built Next
 
 Ordered by dependency — earlier items unblock later ones.
-
-### Phase 2: Photo Scanning & Indexing
-
-The core pipeline that makes the app useful.
-
-1. **Photos migration** — create the `photos` table with EXIF columns (see `docs/04-feature-photo-browsing.md`)
-2. **Photo domain + repository** — entity, sqlc queries for CRUD + filtered listing with cursor pagination
-3. **File scanner service** — walks the source directory, diffs against DB, queues new/modified/deleted files
-4. **EXIF extraction** — `rwcarlsen/goexif` to parse metadata from image files
-5. **Scanner API** — `POST /scanner/run`, `GET /scanner/status` (admin only)
-6. **Photos API** — `GET /photos` (paginated, filtered), `GET /photos/:id`
 
 ### Phase 3: Caching & Thumbnails
 
