@@ -54,11 +54,14 @@ func testServer(t *testing.T, registrationOpen bool) *Server {
 
 func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:?_foreign_keys=on")
+	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		t.Fatalf("enable foreign keys: %v", err)
+	}
 
 	migrationsDir := filepath.Join("..", "..", "database", "sqlite", "migrations")
 	entries, err := os.ReadDir(migrationsDir)

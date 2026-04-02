@@ -9,20 +9,33 @@ import (
 )
 
 type Querier interface {
+	AddPhotoTag(ctx context.Context, arg AddPhotoTagParams) error
 	CountUsers(ctx context.Context) (int64, error)
 	CreatePhoto(ctx context.Context, arg CreatePhotoParams) (Photo, error)
+	CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error)
+	CreateTagGroup(ctx context.Context, arg CreateTagGroupParams) (TagGroup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteTag(ctx context.Context, id int64) error
+	DeleteTagGroup(ctx context.Context, id int64) error
 	GetPhotoByFilePath(ctx context.Context, filePath string) (Photo, error)
 	GetPhotoByID(ctx context.Context, id int64) (Photo, error)
+	GetTagByID(ctx context.Context, id int64) (GetTagByIDRow, error)
+	GetTagGroupByID(ctx context.Context, id int64) (TagGroup, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListAllFingerprints(ctx context.Context) ([]ListAllFingerprintsRow, error)
 	ListPendingPhotos(ctx context.Context, limit int64) ([]Photo, error)
+	ListTagGroups(ctx context.Context) ([]TagGroup, error)
+	ListTags(ctx context.Context) ([]ListTagsRow, error)
+	ListTagsForPhoto(ctx context.Context, photoID int64) ([]ListTagsForPhotoRow, error)
 	ListUsers(ctx context.Context) ([]ListUsersRow, error)
 	Ping(ctx context.Context) error
+	RemovePhotoTag(ctx context.Context, arg RemovePhotoTagParams) error
 	UpdateLastLogin(ctx context.Context, id int64) error
 	UpdatePhoto(ctx context.Context, arg UpdatePhotoParams) error
 	UpdatePhotoCacheStatus(ctx context.Context, arg UpdatePhotoCacheStatusParams) error
+	UpdateTag(ctx context.Context, arg UpdateTagParams) error
+	UpdateTagGroup(ctx context.Context, arg UpdateTagGroupParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 }
 
