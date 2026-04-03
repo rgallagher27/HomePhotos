@@ -25,6 +25,7 @@ Tag-based photo organization: tags, tag groups, photo-tag associations, CRUD API
 | Entry point | `backend/cmd/server/main.go` | Done — signal handling, graceful shutdown, envconfig |
 | Config | `backend/config/config.go` | Done — `HOMEPHOTOS_` prefix, all env vars defined |
 | SQLite connection | `backend/database/sqlite/sqlite.go` | Done — WAL mode, foreign keys, busy timeout, single writer |
+| Auto-migrations | `backend/database/sqlite/migrate.go` | Done — embeds SQL files, applies on startup, version tracking |
 | Migrations | `backend/database/sqlite/migrations/` | Done — `000001_init` (schema_info), `000002_add_users_table` (users), `000003_add_photos_table` (photos with EXIF columns), `000004_add_tagging_tables` (tag_groups, tags, photo_tags) |
 | sqlc | `backend/database/sqlite/sqlc.yaml` | Done — configured for SQLite, generates to `database/sqlite/` |
 | sqlc queries | `backend/database/sqlite/queries/` | Done — `health.sql` (Ping), `users.sql` (7 queries), `photos.sql` (7 queries), `tags.sql` (tag groups CRUD, tags CRUD with joins, photo-tag associations) |
@@ -77,6 +78,10 @@ Tag-based photo organization: tags, tag groups, photo-tag associations, CRUD API
 ### Phase 5: Frontend — Complete
 
 SvelteKit frontend with auth, photo browsing, tag filtering, and admin panel.
+
+### Phase 6: Polish & Hardening — Complete
+
+Auto-migrations on startup, error handling and loading states across all components, custom error page, keyboard/accessibility fixes.
 
 ### Frontend (SvelteKit)
 
@@ -131,13 +136,13 @@ SvelteKit frontend with auth, photo browsing, tag filtering, and admin panel.
 
 | Suite | Count | Coverage |
 |-------|-------|----------|
-| `database/sqlite` | 35 tests | User repository (8), photo repository (16): CRUD, cursor pagination, filters, tag filtering (OR/AND/combined), orphan cleanup, list pending, update cache status. Tag repository (11): group CRUD, tag CRUD, duplicates, cascades, photo-tag operations, batch queries |
+| `database/sqlite` | 38 tests | User repository (8), photo repository (16): CRUD, cursor pagination, filters, tag filtering (OR/AND/combined), orphan cleanup, list pending, update cache status. Tag repository (11): group CRUD, tag CRUD, duplicates, cascades, photo-tag operations, batch queries. Migrations (3): fresh DB, idempotent, partial |
 | `services/auth` | 7 tests | Token: generate/validate, expired, invalid sig, malformed. Service: register/login |
 | `services/scanner` | 14 tests | EXIF extraction (4), scanner service (10): new/incremental/changed/orphaned files, concurrency, scheduling |
 | `services/imaging` | 11 tests | Resize (3), orientation (1), encode roundtrip (1), decode (1), RAW extraction (3), edge cases (2) |
 | `services/cache` | 9 tests | Generate JPEG (1), corrupt file (1), has/path (1), cache dir layout (1), generate if needed (1), source reader (1), worker pool (2), context cancellation (1) |
 | `ports/rest` | 54 tests | Auth (8), users (7), photos (9), scanner (5), images (5), tags (13), photo-tags (9): full endpoint coverage with auth checks |
-| **Total** | **130 tests** | |
+| **Total** | **133 tests** | |
 
 ### Documentation
 
