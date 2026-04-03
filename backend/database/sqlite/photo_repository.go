@@ -178,8 +178,11 @@ func (r *PhotoRepository) UpdateCacheStatus(ctx context.Context, id int64, statu
 
 func (r *PhotoRepository) List(ctx context.Context, params photo.ListParams) (*photo.ListResult, error) {
 	sortCol := "captured_at"
-	if params.SortBy == "file_name" {
+	switch params.SortBy {
+	case "file_name":
 		sortCol = "file_name"
+	case "file_path":
+		sortCol = "file_path"
 	}
 
 	direction := "DESC"
@@ -303,9 +306,12 @@ func (r *PhotoRepository) List(ctx context.Context, params photo.ListParams) (*p
 	if hasMore && len(photos) > 0 {
 		last := photos[len(photos)-1]
 		var sortVal string
-		if sortCol == "file_name" {
+		switch sortCol {
+		case "file_name":
 			sortVal = last.FileName
-		} else {
+		case "file_path":
+			sortVal = last.FilePath
+		default:
 			if last.CapturedAt != nil {
 				sortVal = last.CapturedAt.UTC().Format(time.RFC3339Nano)
 			}

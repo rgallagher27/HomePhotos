@@ -17,12 +17,15 @@
 	let selectedTagIds: number[] = $state([]);
 	let tagMode: 'and' | 'or' = $state('or');
 	let sidebarOpen = $state(false);
+	let groupBy: 'date' | 'folder' = $state('date');
 
 	async function loadMore() {
 		if (loading || !hasMore) return;
 		loading = true;
 
-		const query: Record<string, unknown> = { limit: 50, sort: 'captured_at', order: 'desc' };
+		const sort = groupBy === 'folder' ? 'file_path' : 'captured_at';
+		const order = groupBy === 'folder' ? 'asc' : 'desc';
+		const query: Record<string, unknown> = { limit: 50, sort, order };
 		if (cursor) query.cursor = cursor;
 		if (selectedTagIds.length > 0) {
 			query.tags = selectedTagIds.join(',');
@@ -68,6 +71,12 @@
 
 	function clearTags() {
 		selectedTagIds = [];
+		resetAndLoad();
+	}
+
+	function setGroupBy(mode: 'date' | 'folder') {
+		if (groupBy === mode) return;
+		groupBy = mode;
 		resetAndLoad();
 	}
 
@@ -131,6 +140,20 @@
 
 	<!-- Main content -->
 	<div class="flex-1 overflow-y-auto p-4">
+		<div class="mb-4 flex items-center gap-1 text-sm">
+			<span class="text-xs text-gray-500 mr-1">Group by:</span>
+			<button
+				type="button"
+				onclick={() => setGroupBy('date')}
+				class="rounded px-2 py-1 {groupBy === 'date' ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-500 hover:text-gray-700'}"
+			>Date</button>
+			<button
+				type="button"
+				onclick={() => setGroupBy('folder')}
+				class="rounded px-2 py-1 {groupBy === 'folder' ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-500 hover:text-gray-700'}"
+			>Folder</button>
+		</div>
+
 		{#if error}
 			<div class="mb-4 rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
 		{/if}
@@ -147,6 +170,6 @@
 			</div>
 		{/if}
 
-		<PhotoGrid {photos} {hasMore} {loading} onLoadMore={loadMore} onPhotoClick={handlePhotoClick} />
+		<PhotoGrid {photos} {hasMore} {loading} {groupBy} onLoadMore={loadMore} onPhotoClick={handlePhotoClick} />
 	</div>
 </div>

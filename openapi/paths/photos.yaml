@@ -25,6 +25,7 @@ get:
         enum:
           - captured_at
           - file_name
+          - file_path
         default: captured_at
       description: Field to sort by
     - name: order

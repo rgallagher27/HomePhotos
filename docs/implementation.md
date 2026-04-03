@@ -96,8 +96,8 @@ Auto-migrations on startup, error handling and loading states across all compone
 | Register page | `frontend/src/routes/register/+page.svelte` | Done — username/password/email form |
 | Image proxy | `frontend/src/routes/img/[id]/[size]/+server.ts` | Done — server-side auth proxy for images |
 | Image helpers | `frontend/src/lib/image.ts` | Done — thumbUrl, previewUrl, fullUrl |
-| Photo grid page | `frontend/src/routes/(app)/+page.svelte` | Done — infinite scroll, tag filtering, sidebar |
-| PhotoGrid | `frontend/src/lib/components/PhotoGrid.svelte` | Done — responsive grid, date grouping, IntersectionObserver |
+| Photo grid page | `frontend/src/routes/(app)/+page.svelte` | Done — infinite scroll, tag filtering, sidebar, date/folder grouping toggle |
+| PhotoGrid | `frontend/src/lib/components/PhotoGrid.svelte` | Done — responsive grid, date/folder grouping, IntersectionObserver |
 | PhotoCard | `frontend/src/lib/components/PhotoCard.svelte` | Done — thumbnail with hover overlay |
 | Photo detail | `frontend/src/routes/(app)/photos/[id]/+page.svelte` | Done — preview/full image, EXIF panel, tag editing, arrow key navigation |
 | Photo navigation | `frontend/src/lib/photoNav.svelte.ts` | Done — stores photo ID list for prev/next cycling |
