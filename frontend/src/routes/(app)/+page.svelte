@@ -9,6 +9,7 @@
 	import FolderBreadcrumb from '$lib/components/FolderBreadcrumb.svelte';
 	import FolderGrid from '$lib/components/FolderGrid.svelte';
 	import { setPhotoNav } from '$lib/photoNav.svelte';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 
 	let photos: PhotoListItem[] = $state([]);
 	let cursor: string | null = $state(null);
@@ -128,47 +129,39 @@
 	onMount(() => {
 		resetAndLoad();
 	});
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' && sidebarOpen) sidebarOpen = false;
-	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="flex h-[calc(100vh-49px)]">
 	<!-- Mobile sidebar toggle -->
-	<button
-		type="button"
-		onclick={() => (sidebarOpen = !sidebarOpen)}
-		class="fixed bottom-4 left-4 z-30 rounded-full bg-white p-3 shadow-lg border border-gray-200 lg:hidden"
-		aria-label="Toggle tag filters"
-	>
-		<svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-		</svg>
-		{#if selectedTagIds.length > 0}
-			<span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
-				{selectedTagIds.length}
-			</span>
-		{/if}
-	</button>
+	<Sheet.Root bind:open={sidebarOpen}>
+		<Sheet.Trigger class="fixed bottom-4 left-4 z-30 rounded-full bg-white p-3 shadow-lg border border-gray-200 lg:hidden">
+			<svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+			</svg>
+			{#if selectedTagIds.length > 0}
+				<span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
+					{selectedTagIds.length}
+				</span>
+			{/if}
+		</Sheet.Trigger>
+		<Sheet.Content side="left">
+			<Sheet.Header>
+				<Sheet.Title>Filter by tags</Sheet.Title>
+			</Sheet.Header>
+			<div class="overflow-y-auto flex-1 p-4">
+				<TagSidebar
+					{selectedTagIds}
+					{tagMode}
+					onToggleTag={toggleTag}
+					onToggleMode={toggleMode}
+					onClear={clearTags}
+				/>
+			</div>
+		</Sheet.Content>
+	</Sheet.Root>
 
-	<!-- Mobile backdrop -->
-	{#if sidebarOpen}
-		<button
-			type="button"
-			class="fixed inset-0 z-20 bg-black/30 lg:hidden cursor-default"
-			onclick={() => (sidebarOpen = false)}
-			aria-label="Close sidebar"
-		></button>
-	{/if}
-
-	<!-- Sidebar -->
-	<aside
-		class="fixed inset-y-0 left-0 z-20 w-64 transform overflow-y-auto border-r border-gray-200 bg-white p-4 pt-16 transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 lg:pt-4
-		{sidebarOpen ? 'translate-x-0' : '-translate-x-full'}"
-	>
+	<!-- Desktop sidebar -->
+	<aside class="hidden lg:block w-64 overflow-y-auto border-r border-gray-200 bg-white p-4">
 		<TagSidebar
 			{selectedTagIds}
 			{tagMode}

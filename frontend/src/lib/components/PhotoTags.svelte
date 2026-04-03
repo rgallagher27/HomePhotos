@@ -3,6 +3,8 @@
 	import type { TagResponse, TagListResponse } from '$lib/api/gen/types.gen';
 	import { getTags, postTag, postPhotoTags, deletePhotoTag } from '$lib/api/gen/sdk.gen';
 	import type { AuthState } from '$lib/auth.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 
 	let {
 		photoId,
@@ -129,13 +131,7 @@
 
 	{#if showDropdown}
 		<div class="relative">
-			<input
-				type="text"
-				bind:value={search}
-				placeholder="Search tags..."
-				disabled={adding}
-				class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-			/>
+			<Input type="text" bind:value={search} placeholder="Search tags..." disabled={adding} />
 			<div
 				role="listbox"
 				tabindex="-1"
@@ -173,13 +169,9 @@
 				{/if}
 			</div>
 
-			<button
-				type="button"
-				onclick={() => (showDropdown = false)}
-				class="mt-1 text-xs text-gray-400 hover:text-gray-600"
-			>
+			<Button variant="ghost" size="xs" onclick={() => (showDropdown = false)} class="mt-1">
 				Cancel
-			</button>
+			</Button>
 		</div>
 	{/if}
 </div>

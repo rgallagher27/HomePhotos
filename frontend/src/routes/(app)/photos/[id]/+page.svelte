@@ -7,6 +7,8 @@
 	import ExifPanel from '$lib/components/ExifPanel.svelte';
 	import PhotoTags from '$lib/components/PhotoTags.svelte';
 	import { getAdjacentId } from '$lib/photoNav.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
 	let photo: PhotoDetailResponse | null = $state(null);
 	let error = $state('');
@@ -56,8 +58,9 @@
 		</div>
 	</div>
 {:else if !photo}
-	<div class="flex items-center justify-center p-12">
-		<div class="text-sm text-gray-400">Loading...</div>
+	<div class="p-4">
+		<Skeleton class="mb-4 h-4 w-16" />
+		<Skeleton class="aspect-video w-full rounded-lg" />
 	</div>
 {:else}
 	<div class="p-4">
@@ -69,14 +72,17 @@
 			<div class="flex-1 min-w-0">
 				<div class="relative rounded-lg bg-gray-100 overflow-hidden group">
 					{#if prevId != null}
-						<button
-							type="button"
-							onclick={() => navigate(prevId)}
-							class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
-							aria-label="Previous photo"
-						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-						</button>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									onclick={() => navigate(prevId)}
+									class="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+								>
+									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Previous photo</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
 					<img
 						src={showFull ? fullUrl(photo.id) : previewUrl(photo.id)}
@@ -84,14 +90,17 @@
 						class="mx-auto max-h-[80vh] object-contain"
 					/>
 					{#if nextId != null}
-						<button
-							type="button"
-							onclick={() => navigate(nextId)}
-							class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
-							aria-label="Next photo"
-						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-						</button>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger
+									onclick={() => navigate(nextId)}
+									class="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/40 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60"
+								>
+									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Next photo</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
 				</div>
 				<div class="mt-2 flex items-center justify-between">

@@ -5,6 +5,8 @@
 	import { page } from '$app/state';
 	import { AuthState } from '$lib/auth.svelte';
 	import { initClient } from '$lib/api/setup';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
 
 	let { children } = $props();
 
@@ -35,25 +37,20 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
-	<header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-		<a href="/" class="text-xl font-semibold text-gray-900 hover:text-gray-700">HomePhotos</a>
+<div class="min-h-screen bg-background">
+	<header class="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
+		<a href="/" class="text-xl font-semibold text-foreground hover:text-foreground/80">HomePhotos</a>
 
 		{#if auth.isAuthenticated}
-			<nav class="flex items-center gap-4">
+			<nav class="flex items-center gap-2">
 				{#if auth.isAdmin}
-					<a href="/admin" class="text-sm text-gray-600 hover:text-gray-900">Admin</a>
+					<Button variant="ghost" size="sm" href="/admin">Admin</Button>
 				{/if}
-				<span class="text-sm text-gray-500">{auth.user?.username}</span>
-				<button
-					onclick={handleLogout}
-					class="text-sm text-gray-600 hover:text-gray-900"
-				>
-					Sign out
-				</button>
+				<span class="text-sm text-muted-foreground">{auth.user?.username}</span>
+				<Button variant="ghost" size="sm" onclick={handleLogout}>Sign out</Button>
 			</nav>
 		{:else if ready}
-			<a href="/login" class="text-sm text-blue-600 hover:underline">Sign in</a>
+			<Button variant="link" href="/login">Sign in</Button>
 		{/if}
 	</header>
 
@@ -62,7 +59,7 @@
 			{@render children()}
 		{:else}
 			<div class="flex items-center justify-center p-12">
-				<div class="text-gray-400 text-sm">Loading...</div>
+				<Spinner />
 			</div>
 		{/if}
 	</main>

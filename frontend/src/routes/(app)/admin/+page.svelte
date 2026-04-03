@@ -2,37 +2,22 @@
 	import ScannerPanel from '$lib/components/ScannerPanel.svelte';
 	import UserManagement from '$lib/components/UserManagement.svelte';
 	import TagManagement from '$lib/components/TagManagement.svelte';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
 
-	const tabs = ['Scanner', 'Users', 'Tags'] as const;
-	type Tab = (typeof tabs)[number];
-	let activeTab: Tab = $state('Scanner');
+	let activeTab = $state('Scanner');
 </script>
 
 <div class="p-6 max-w-4xl mx-auto">
-	<h2 class="text-2xl font-semibold text-gray-900 mb-6">Admin</h2>
+	<h2 class="text-2xl font-semibold text-foreground mb-6">Admin</h2>
 
-	<div class="border-b border-gray-200 mb-6">
-		<nav class="flex gap-6">
-			{#each tabs as tab}
-				<button
-					type="button"
-					onclick={() => (activeTab = tab)}
-					class="pb-2 text-sm font-medium border-b-2 transition-colors
-					{activeTab === tab
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700'}"
-				>
-					{tab}
-				</button>
-			{/each}
-		</nav>
-	</div>
-
-	{#if activeTab === 'Scanner'}
-		<ScannerPanel />
-	{:else if activeTab === 'Users'}
-		<UserManagement />
-	{:else if activeTab === 'Tags'}
-		<TagManagement />
-	{/if}
+	<Tabs.Root bind:value={activeTab}>
+		<Tabs.List>
+			<Tabs.Trigger value="Scanner">Scanner</Tabs.Trigger>
+			<Tabs.Trigger value="Users">Users</Tabs.Trigger>
+			<Tabs.Trigger value="Tags">Tags</Tabs.Trigger>
+		</Tabs.List>
+		<Tabs.Content value="Scanner"><ScannerPanel /></Tabs.Content>
+		<Tabs.Content value="Users"><UserManagement /></Tabs.Content>
+		<Tabs.Content value="Tags"><TagManagement /></Tabs.Content>
+	</Tabs.Root>
 </div>

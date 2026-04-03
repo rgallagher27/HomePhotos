@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
+
 	let {
 		path,
 		onNavigate
@@ -17,22 +19,24 @@
 	});
 </script>
 
-<nav class="flex items-center gap-1 text-sm text-gray-500">
-	<button
-		type="button"
-		onclick={() => onNavigate('')}
-		class="hover:text-gray-900 {path ? '' : 'font-medium text-gray-900'}"
-	>
-		All folders
-	</button>
-	{#each segments as segment (segment.path)}
-		<span class="text-gray-300">/</span>
-		<button
-			type="button"
-			onclick={() => onNavigate(segment.path)}
-			class="hover:text-gray-900 {segment.path === path ? 'font-medium text-gray-900' : ''}"
-		>
-			{segment.label}
-		</button>
-	{/each}
-</nav>
+<Breadcrumb.Root>
+	<Breadcrumb.List>
+		<Breadcrumb.Item>
+			{#if path}
+				<Breadcrumb.Link onclick={() => onNavigate('')} class="cursor-pointer">All folders</Breadcrumb.Link>
+			{:else}
+				<Breadcrumb.Page>All folders</Breadcrumb.Page>
+			{/if}
+		</Breadcrumb.Item>
+		{#each segments as segment (segment.path)}
+			<Breadcrumb.Separator />
+			<Breadcrumb.Item>
+				{#if segment.path === path}
+					<Breadcrumb.Page>{segment.label}</Breadcrumb.Page>
+				{:else}
+					<Breadcrumb.Link onclick={() => onNavigate(segment.path)} class="cursor-pointer">{segment.label}</Breadcrumb.Link>
+				{/if}
+			</Breadcrumb.Item>
+		{/each}
+	</Breadcrumb.List>
+</Breadcrumb.Root>

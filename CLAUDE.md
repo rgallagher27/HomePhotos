@@ -21,6 +21,13 @@ Use `npm` for frontend. Run `npm install` from within `frontend/`, not from the 
 - `backend/database/sqlite/queries.sql.go`
 - `frontend/src/lib/api/gen/*`
 
+## Frontend Patterns
+
+- **UI components**: shadcn-svelte — copy-paste components in `frontend/src/lib/components/ui/`, configured via `frontend/components.json`
+- **Styling**: Tailwind CSS v4 with CSS variables for theming (defined in `frontend/src/app.css`)
+- **Helpers**: `cn()` class merge utility in `frontend/src/lib/utils.ts`
+- **Adding components**: `npx shadcn-svelte@latest add <component> -y --overwrite` from `frontend/`
+
 ## Backend Patterns
 
 - **Config**: `HOMEPHOTOS_` env var prefix via `kelseyhightower/envconfig`

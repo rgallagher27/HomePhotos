@@ -4,6 +4,10 @@
 	import { postAuthLogin } from '$lib/api/gen/sdk.gen';
 	import type { AuthResponse } from '$lib/api/gen/types.gen';
 	import type { AuthState } from '$lib/auth.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
 
 	const auth = getContext<AuthState>('auth');
 
@@ -31,47 +35,34 @@
 </script>
 
 <div class="flex min-h-[80vh] items-center justify-center">
-	<div class="w-full max-w-sm">
-		<h2 class="mb-6 text-2xl font-semibold text-gray-900">Sign in</h2>
+	<Card.Root class="w-full max-w-sm">
+		<Card.Header>
+			<Card.Title class="text-2xl">Sign in</Card.Title>
+		</Card.Header>
+		<Card.Content>
+			{#if error}
+				<div class="mb-4 rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+			{/if}
 
-		{#if error}
-			<div class="mb-4 rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-		{/if}
+			<form onsubmit={handleSubmit} class="space-y-4">
+				<div class="space-y-1.5">
+					<Label for="username">Username</Label>
+					<Input id="username" type="text" bind:value={username} required />
+				</div>
 
-		<form onsubmit={handleSubmit} class="space-y-4">
-			<div>
-				<label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-				<input
-					id="username"
-					type="text"
-					bind:value={username}
-					required
-					class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-				/>
-			</div>
+				<div class="space-y-1.5">
+					<Label for="password">Password</Label>
+					<Input id="password" type="password" bind:value={password} required />
+				</div>
 
-			<div>
-				<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-				<input
-					id="password"
-					type="password"
-					bind:value={password}
-					required
-					class="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-				/>
-			</div>
+				<Button type="submit" disabled={submitting} class="w-full">
+					{submitting ? 'Signing in...' : 'Sign in'}
+				</Button>
+			</form>
 
-			<button
-				type="submit"
-				disabled={submitting}
-				class="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-			>
-				{submitting ? 'Signing in...' : 'Sign in'}
-			</button>
-		</form>
-
-		<p class="mt-4 text-center text-sm text-gray-600">
-			Don't have an account? <a href="/register" class="text-blue-600 hover:underline">Register</a>
-		</p>
-	</div>
+			<p class="mt-4 text-center text-sm text-muted-foreground">
+				Don't have an account? <a href="/register" class="text-primary hover:underline">Register</a>
+			</p>
+		</Card.Content>
+	</Card.Root>
 </div>

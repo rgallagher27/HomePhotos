@@ -14,6 +14,9 @@
 		postTagGroup,
 		deleteTagGroup
 	} from '$lib/api/gen/sdk.gen';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
 	let tags: TagResponse[] = $state([]);
 	let groups: TagGroupResponse[] = $state([]);
@@ -112,25 +115,9 @@
 		<h3 class="text-lg font-medium text-gray-900">Tag Groups</h3>
 
 		<div class="flex gap-2">
-			<input
-				type="text"
-				bind:value={newGroupName}
-				placeholder="Group name"
-				class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-			/>
-			<input
-				type="number"
-				bind:value={newGroupOrder}
-				placeholder="Order"
-				class="w-20 rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-			/>
-			<button
-				type="button"
-				onclick={createGroup}
-				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-			>
-				Add
-			</button>
+			<Input type="text" bind:value={newGroupName} placeholder="Group name" />
+			<Input type="number" bind:value={newGroupOrder} placeholder="Order" class="w-20" />
+			<Button size="sm" onclick={createGroup}>Add</Button>
 		</div>
 
 		<div class="space-y-1">
@@ -140,21 +127,25 @@
 						<span class="text-sm text-gray-900">{group.name}</span>
 						<span class="ml-2 text-xs text-gray-400">order: {group.sort_order}</span>
 					</div>
-					{#if deletingGroupId === group.id}
-						<span class="text-xs">
-							Delete?
-							<button type="button" onclick={confirmDeleteGroup} class="ml-1 font-medium text-red-600 hover:underline">Yes</button>
-							<button type="button" onclick={() => (deletingGroupId = null)} class="ml-1 font-medium text-gray-400 hover:underline">No</button>
-						</span>
-					{:else}
-						<button
-							type="button"
-							onclick={() => (deletingGroupId = group.id)}
-							class="text-xs text-red-500 hover:text-red-700"
-						>
-							Delete
-						</button>
-					{/if}
+					<AlertDialog.Root bind:open={() => deletingGroupId === group.id, (v) => { if (!v) deletingGroupId = null; }}>
+						<AlertDialog.Trigger>
+							{#snippet child({ props })}
+								<Button variant="ghost" size="xs" {...props} class="text-red-500 hover:text-red-700" onclick={() => (deletingGroupId = group.id)}>
+									Delete
+								</Button>
+							{/snippet}
+						</AlertDialog.Trigger>
+						<AlertDialog.Content>
+							<AlertDialog.Header>
+								<AlertDialog.Title>Delete group "{group.name}"?</AlertDialog.Title>
+								<AlertDialog.Description>This will remove the group. Tags in this group will become ungrouped.</AlertDialog.Description>
+							</AlertDialog.Header>
+							<AlertDialog.Footer>
+								<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+								<AlertDialog.Action onclick={confirmDeleteGroup}>Delete</AlertDialog.Action>
+							</AlertDialog.Footer>
+						</AlertDialog.Content>
+					</AlertDialog.Root>
 				</div>
 			{/each}
 		</div>
@@ -165,33 +156,22 @@
 		<h3 class="text-lg font-medium text-gray-900">Tags</h3>
 
 		<div class="flex flex-wrap gap-2">
-			<input
-				type="text"
-				bind:value={newTagName}
-				placeholder="Tag name"
-				class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-			/>
+			<Input type="text" bind:value={newTagName} placeholder="Tag name" />
 			<input
 				type="color"
 				bind:value={newTagColor}
-				class="h-8 w-8 cursor-pointer rounded border border-gray-300"
+				class="h-8 w-8 cursor-pointer rounded border border-input"
 			/>
 			<select
 				bind:value={newTagGroupId}
-				class="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+				class="rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm"
 			>
 				<option value={null}>No group</option>
 				{#each groups as group (group.id)}
 					<option value={group.id}>{group.name}</option>
 				{/each}
 			</select>
-			<button
-				type="button"
-				onclick={createTag}
-				class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-			>
-				Add
-			</button>
+			<Button size="sm" onclick={createTag}>Add</Button>
 		</div>
 
 		{#each tagsByGroup as [groupName, groupTags]}
@@ -206,21 +186,25 @@
 								{/if}
 								<span class="text-sm text-gray-900">{tag.name}</span>
 							</div>
-							{#if deletingTagId === tag.id}
-								<span class="text-xs">
-									Delete?
-									<button type="button" onclick={confirmDeleteTag} class="ml-1 font-medium text-red-600 hover:underline">Yes</button>
-									<button type="button" onclick={() => (deletingTagId = null)} class="ml-1 font-medium text-gray-400 hover:underline">No</button>
-								</span>
-							{:else}
-								<button
-									type="button"
-									onclick={() => (deletingTagId = tag.id)}
-									class="text-xs text-red-500 hover:text-red-700"
-								>
-									Delete
-								</button>
-							{/if}
+							<AlertDialog.Root bind:open={() => deletingTagId === tag.id, (v) => { if (!v) deletingTagId = null; }}>
+								<AlertDialog.Trigger>
+									{#snippet child({ props })}
+										<Button variant="ghost" size="xs" {...props} class="text-red-500 hover:text-red-700" onclick={() => (deletingTagId = tag.id)}>
+											Delete
+										</Button>
+									{/snippet}
+								</AlertDialog.Trigger>
+								<AlertDialog.Content>
+									<AlertDialog.Header>
+										<AlertDialog.Title>Delete tag "{tag.name}"?</AlertDialog.Title>
+										<AlertDialog.Description>This will remove the tag from all photos.</AlertDialog.Description>
+									</AlertDialog.Header>
+									<AlertDialog.Footer>
+										<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+										<AlertDialog.Action onclick={confirmDeleteTag}>Delete</AlertDialog.Action>
+									</AlertDialog.Footer>
+								</AlertDialog.Content>
+							</AlertDialog.Root>
 						</div>
 					{/each}
 				</div>

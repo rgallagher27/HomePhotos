@@ -2,6 +2,10 @@
 	import { onMount } from 'svelte';
 	import type { UserResponse, UserListResponse } from '$lib/api/gen/types.gen';
 	import { getUsers, putUserRole } from '$lib/api/gen/sdk.gen';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
 	let users: UserResponse[] = $state([]);
 	let confirmingId: number | null = $state(null);
@@ -59,46 +63,53 @@
 	{/if}
 
 	{#if loading}
-		<div class="text-sm text-gray-400">Loading...</div>
+		<div class="space-y-2">
+			{#each { length: 4 } as _}
+				<Skeleton class="h-10 w-full" />
+			{/each}
+		</div>
 	{:else}
-	<div class="overflow-x-auto rounded border border-gray-200">
-		<table class="min-w-full divide-y divide-gray-200">
-			<thead class="bg-gray-50">
-				<tr>
-					<th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Username</th>
-					<th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Role</th>
-					<th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Created</th>
-					<th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500">Last Login</th>
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-gray-200">
-				{#each users as user (user.id)}
-					<tr>
-						<td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900">{user.username}</td>
-						<td class="whitespace-nowrap px-4 py-2 text-sm">
-							{#if confirmingId === user.id}
-								<span class="text-amber-600 text-xs">
-									Change to {pendingRole}?
-									<button type="button" onclick={confirmRoleChange} class="ml-1 font-medium text-blue-600 hover:underline">Yes</button>
-									<button type="button" onclick={cancelRoleChange} class="ml-1 font-medium text-gray-400 hover:underline">No</button>
-								</span>
-							{:else}
-								<select
-									value={user.role}
-									onchange={(e) => requestRoleChange(user.id, (e.target as HTMLSelectElement).value as 'admin' | 'viewer')}
-									class="rounded border border-gray-300 px-2 py-1 text-xs"
-								>
-									<option value="admin">admin</option>
-									<option value="viewer">viewer</option>
-								</select>
-							{/if}
-						</td>
-						<td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500">{formatDate(user.created_at)}</td>
-						<td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500">{formatDate(user.last_login)}</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<AlertDialog.Root bind:open={() => confirmingId !== null, (v) => { if (!v) cancelRoleChange(); }}>
+		<AlertDialog.Content>
+			<AlertDialog.Header>
+				<AlertDialog.Title>Change role to {pendingRole}?</AlertDialog.Title>
+				<AlertDialog.Description>This will change the user's permissions.</AlertDialog.Description>
+			</AlertDialog.Header>
+			<AlertDialog.Footer>
+				<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+				<AlertDialog.Action onclick={confirmRoleChange}>Confirm</AlertDialog.Action>
+			</AlertDialog.Footer>
+		</AlertDialog.Content>
+	</AlertDialog.Root>
+
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head>Username</Table.Head>
+				<Table.Head>Role</Table.Head>
+				<Table.Head>Created</Table.Head>
+				<Table.Head>Last Login</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
+			{#each users as user (user.id)}
+				<Table.Row>
+					<Table.Cell>{user.username}</Table.Cell>
+					<Table.Cell>
+						<select
+							value={user.role}
+							onchange={(e) => requestRoleChange(user.id, (e.target as HTMLSelectElement).value as 'admin' | 'viewer')}
+							class="rounded border border-input px-2 py-1 text-xs"
+						>
+							<option value="admin">admin</option>
+							<option value="viewer">viewer</option>
+						</select>
+					</Table.Cell>
+					<Table.Cell class="text-muted-foreground">{formatDate(user.created_at)}</Table.Cell>
+					<Table.Cell class="text-muted-foreground">{formatDate(user.last_login)}</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
 	{/if}
 </div>

@@ -19,7 +19,9 @@
       "Bash(make db/migrate/create name=AddUsersTable)",
       "Bash(make generate/sqlite)",
       "Bash(make lint:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:next.shadcn-svelte.com)",
+      "WebFetch(domain:shadcn-svelte.com)"
     ]
   }
 }

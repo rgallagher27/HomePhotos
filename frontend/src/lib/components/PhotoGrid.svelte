@@ -2,6 +2,7 @@
 	import type { PhotoListItem } from '$lib/api/gen/types.gen';
 	import PhotoCard from './PhotoCard.svelte';
 	import VirtualGroup from './VirtualGroup.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 
 	let {
 		photos,
@@ -110,8 +111,10 @@
 	{/if}
 
 	{#if loading}
-		<div class="flex justify-center py-4">
-			<div class="text-sm text-gray-400">Loading...</div>
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-1">
+			{#each { length: 8 } as _}
+				<Skeleton class="aspect-square rounded" />
+			{/each}
 		</div>
 	{/if}
 

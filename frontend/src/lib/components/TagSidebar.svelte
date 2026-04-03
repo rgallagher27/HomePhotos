@@ -8,6 +8,7 @@
 	} from '$lib/api/gen/types.gen';
 	import { getTags, getTagGroups } from '$lib/api/gen/sdk.gen';
 	import TagChip from './TagChip.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 
 	let {
 		selectedTagIds,
@@ -123,7 +124,11 @@
 	{#if error}
 		<p class="text-xs text-red-500">{error}</p>
 	{:else if loading}
-		<p class="text-xs text-gray-400">Loading tags...</p>
+		<div class="space-y-2">
+			{#each { length: 6 } as _}
+				<Skeleton class="h-4 w-24" />
+			{/each}
+		</div>
 	{:else if allTags.length === 0}
 		<p class="text-xs text-gray-400">No tags yet</p>
 	{/if}
