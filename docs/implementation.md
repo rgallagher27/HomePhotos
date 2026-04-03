@@ -81,7 +81,7 @@ SvelteKit frontend with auth, photo browsing, tag filtering, and admin panel.
 
 ### Phase 6: Polish & Hardening — Complete
 
-Auto-migrations on startup, error handling and loading states across all components, custom error page, keyboard/accessibility fixes.
+Auto-migrations on startup, error handling and loading states across all components, custom error page, keyboard/accessibility fixes, arrow key photo navigation.
 
 ### Frontend (SvelteKit)
 
@@ -99,7 +99,9 @@ Auto-migrations on startup, error handling and loading states across all compone
 | Photo grid page | `frontend/src/routes/(app)/+page.svelte` | Done — infinite scroll, tag filtering, sidebar |
 | PhotoGrid | `frontend/src/lib/components/PhotoGrid.svelte` | Done — responsive grid, date grouping, IntersectionObserver |
 | PhotoCard | `frontend/src/lib/components/PhotoCard.svelte` | Done — thumbnail with hover overlay |
-| Photo detail | `frontend/src/routes/(app)/photos/[id]/+page.svelte` | Done — preview/full image, EXIF panel, tag editing |
+| Photo detail | `frontend/src/routes/(app)/photos/[id]/+page.svelte` | Done — preview/full image, EXIF panel, tag editing, arrow key navigation |
+| Photo navigation | `frontend/src/lib/photoNav.svelte.ts` | Done — stores photo ID list for prev/next cycling |
+| Error page | `frontend/src/routes/+error.svelte` | Done — custom error page with status code and home link |
 | ExifPanel | `frontend/src/lib/components/ExifPanel.svelte` | Done — camera, lens, exposure, GPS metadata |
 | PhotoTags | `frontend/src/lib/components/PhotoTags.svelte` | Done — add/remove tags, admin can create inline |
 | TagSidebar | `frontend/src/lib/components/TagSidebar.svelte` | Done — grouped tags, AND/OR toggle, mobile drawer |
