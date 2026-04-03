@@ -21,6 +21,20 @@ func Migrate(db *sql.DB) error {
 		return fmt.Errorf("create _migrations table: %w", err)
 	}
 
+	// Import version from golang-migrate's schema_migrations if present
+	var legacyVersion int
+	row := db.QueryRow("SELECT version FROM schema_migrations LIMIT 1")
+	if row.Scan(&legacyVersion) == nil && legacyVersion > 0 {
+		var count int
+		db.QueryRow("SELECT COUNT(*) FROM _migrations").Scan(&count)
+		if count == 0 {
+			for v := 1; v <= legacyVersion; v++ {
+				db.Exec("INSERT OR IGNORE INTO _migrations (version) VALUES (?)", v)
+			}
+			slog.Info("imported migration state from golang-migrate", "version", legacyVersion)
+		}
+	}
+
 	var current int
 	if err := db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM _migrations").Scan(&current); err != nil {
 		return fmt.Errorf("get current version: %w", err)
