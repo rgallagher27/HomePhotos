@@ -92,11 +92,11 @@ lint/frontend: ## Run frontend linter
 
 db/migrate: ## Run database migrations
 	@echo "$(CYAN)Running migrations...$(RESET)"
-	@DB_PATH=$$(grep DB_PATH backend/.env.local 2>/dev/null | cut -d'=' -f2- || echo "./backend/homephotos.db"); \
+	@DB_PATH=$$(grep DB_PATH backend/.env.local 2>/dev/null | cut -d'=' -f2- || echo "./homephotos.db"); \
 	cd backend && migrate -source "file://database/sqlite/migrations" -database "sqlite://$$DB_PATH" up
 
 db/migrate/down: ## Revert last migration
-	@DB_PATH=$$(grep DB_PATH backend/.env.local 2>/dev/null | cut -d'=' -f2- || echo "./backend/homephotos.db"); \
+	@DB_PATH=$$(grep DB_PATH backend/.env.local 2>/dev/null | cut -d'=' -f2- || echo "./homephotos.db"); \
 	cd backend && migrate -source "file://database/sqlite/migrations" -database "sqlite://$$DB_PATH" down 1
 
 db/migrate/create: ## Create new migration (name=MigrationName)

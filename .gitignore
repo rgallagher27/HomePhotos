@@ -3,6 +3,9 @@ node_modules/
 
 # Build outputs
 backend/tmp/
+backend/cache/
+backend/testdata/photos/
+
 frontend/.svelte-kit/
 frontend/build/
 
