@@ -6,6 +6,7 @@
 	import PhotoGrid from '$lib/components/PhotoGrid.svelte';
 	import TagSidebar from '$lib/components/TagSidebar.svelte';
 	import TagChip from '$lib/components/TagChip.svelte';
+	import { setPhotoNav } from '$lib/photoNav.svelte';
 
 	let photos: PhotoListItem[] = $state([]);
 	let cursor: string | null = $state(null);
@@ -71,6 +72,7 @@
 	}
 
 	function handlePhotoClick(photo: PhotoListItem) {
+		setPhotoNav(photos.map((p) => p.id));
 		goto(`/photos/${photo.id}`);
 	}
 
