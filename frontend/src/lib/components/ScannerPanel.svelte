@@ -10,10 +10,12 @@
 
 	async function fetchStatus() {
 		const res = await getScannerStatus();
-		if (res.data) {
-			status = res.data as unknown as ScannerStatusResponse;
-			running = status.status === 'scanning';
+		if (res.error) {
+			error = 'Failed to fetch scanner status';
+			return;
 		}
+		status = res.data as unknown as ScannerStatusResponse;
+		running = status.status === 'scanning';
 	}
 
 	async function startScan() {

@@ -25,11 +25,18 @@
 
 	let allTags: TagResponse[] = $state([]);
 	let groups: TagGroupResponse[] = $state([]);
+	let loading = $state(true);
+	let error = $state('');
 
 	onMount(async () => {
 		const [tagsRes, groupsRes] = await Promise.all([getTags(), getTagGroups()]);
-		if (tagsRes.data) allTags = (tagsRes.data as unknown as TagListResponse).data;
-		if (groupsRes.data) groups = (groupsRes.data as unknown as TagGroupListResponse).data;
+		if (tagsRes.error || groupsRes.error) {
+			error = 'Failed to load tags';
+		} else {
+			allTags = (tagsRes.data as unknown as TagListResponse).data;
+			groups = (groupsRes.data as unknown as TagGroupListResponse).data;
+		}
+		loading = false;
 	});
 
 	const selectedSet = $derived(new Set(selectedTagIds));
@@ -113,7 +120,11 @@
 		</div>
 	{/each}
 
-	{#if allTags.length === 0}
+	{#if error}
+		<p class="text-xs text-red-500">{error}</p>
+	{:else if loading}
+		<p class="text-xs text-gray-400">Loading tags...</p>
+	{:else if allTags.length === 0}
 		<p class="text-xs text-gray-400">No tags yet</p>
 	{/if}
 </div>

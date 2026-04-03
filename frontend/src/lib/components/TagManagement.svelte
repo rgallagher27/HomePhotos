@@ -27,33 +27,47 @@
 
 	let deletingTagId: number | null = $state(null);
 	let deletingGroupId: number | null = $state(null);
+	let loading = $state(true);
+	let error = $state('');
 
 	async function fetchAll() {
 		const [tagsRes, groupsRes] = await Promise.all([getTags(), getTagGroups()]);
-		if (tagsRes.data) tags = (tagsRes.data as unknown as TagListResponse).data;
-		if (groupsRes.data) groups = (groupsRes.data as unknown as TagGroupListResponse).data;
+		if (tagsRes.error || groupsRes.error) {
+			error = 'Failed to load tags';
+		} else {
+			tags = (tagsRes.data as unknown as TagListResponse).data;
+			groups = (groupsRes.data as unknown as TagGroupListResponse).data;
+			error = '';
+		}
+		loading = false;
 	}
 
 	async function createTag() {
 		if (!newTagName.trim()) return;
+		error = '';
 		const body: { name: string; color?: string; group_id?: number } = { name: newTagName.trim() };
 		if (newTagColor) body.color = newTagColor;
 		if (newTagGroupId) body.group_id = newTagGroupId;
-		await postTag({ body });
+		const res = await postTag({ body });
+		if (res.error) { error = 'Failed to create tag'; return; }
 		newTagName = '';
 		await fetchAll();
 	}
 
 	async function confirmDeleteTag() {
 		if (deletingTagId === null) return;
-		await deleteTag({ path: { id: deletingTagId } });
+		error = '';
+		const res = await deleteTag({ path: { id: deletingTagId } });
+		if (res.error) error = 'Failed to delete tag';
 		deletingTagId = null;
 		await fetchAll();
 	}
 
 	async function createGroup() {
 		if (!newGroupName.trim()) return;
-		await postTagGroup({ body: { name: newGroupName.trim(), sort_order: newGroupOrder } });
+		error = '';
+		const res = await postTagGroup({ body: { name: newGroupName.trim(), sort_order: newGroupOrder } });
+		if (res.error) { error = 'Failed to create group'; return; }
 		newGroupName = '';
 		newGroupOrder = 0;
 		await fetchAll();
@@ -61,7 +75,9 @@
 
 	async function confirmDeleteGroup() {
 		if (deletingGroupId === null) return;
-		await deleteTagGroup({ path: { id: deletingGroupId } });
+		error = '';
+		const res = await deleteTagGroup({ path: { id: deletingGroupId } });
+		if (res.error) error = 'Failed to delete group';
 		deletingGroupId = null;
 		await fetchAll();
 	}
@@ -84,6 +100,13 @@
 </script>
 
 <div class="space-y-8">
+	{#if error}
+		<div class="rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+	{/if}
+
+	{#if loading}
+		<div class="text-sm text-gray-400">Loading...</div>
+	{:else}
 	<!-- Tag Groups -->
 	<div class="space-y-4">
 		<h3 class="text-lg font-medium text-gray-900">Tag Groups</h3>
@@ -204,4 +227,5 @@
 			</div>
 		{/each}
 	</div>
+	{/if}
 </div>

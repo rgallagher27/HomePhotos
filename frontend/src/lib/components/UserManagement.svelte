@@ -6,12 +6,18 @@
 	let users: UserResponse[] = $state([]);
 	let confirmingId: number | null = $state(null);
 	let pendingRole: 'admin' | 'viewer' | null = $state(null);
+	let loading = $state(true);
+	let error = $state('');
 
 	async function fetchUsers() {
 		const res = await getUsers();
-		if (res.data) {
+		if (res.error) {
+			error = 'Failed to load users';
+		} else {
 			users = (res.data as unknown as UserListResponse).data;
+			error = '';
 		}
+		loading = false;
 	}
 
 	function requestRoleChange(userId: number, role: 'admin' | 'viewer') {
@@ -21,7 +27,8 @@
 
 	async function confirmRoleChange() {
 		if (confirmingId === null || !pendingRole) return;
-		await putUserRole({ path: { id: confirmingId }, body: { role: pendingRole } });
+		const res = await putUserRole({ path: { id: confirmingId }, body: { role: pendingRole } });
+		if (res.error) error = 'Failed to update role';
 		confirmingId = null;
 		pendingRole = null;
 		await fetchUsers();
@@ -47,6 +54,13 @@
 <div class="space-y-4">
 	<h3 class="text-lg font-medium text-gray-900">Users</h3>
 
+	{#if error}
+		<div class="rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+	{/if}
+
+	{#if loading}
+		<div class="text-sm text-gray-400">Loading...</div>
+	{:else}
 	<div class="overflow-x-auto rounded border border-gray-200">
 		<table class="min-w-full divide-y divide-gray-200">
 			<thead class="bg-gray-50">
@@ -86,4 +100,5 @@
 			</tbody>
 		</table>
 	</div>
+	{/if}
 </div>

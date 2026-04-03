@@ -12,6 +12,7 @@
 	let hasMore = $state(true);
 	let loading = $state(false);
 
+	let error = $state('');
 	let selectedTagIds: number[] = $state([]);
 	let tagMode: 'and' | 'or' = $state('or');
 	let sidebarOpen = $state(false);
@@ -30,9 +31,11 @@
 		const res = await getPhotos({ query });
 
 		if (res.error) {
+			error = 'Failed to load photos';
 			loading = false;
 			return;
 		}
+		error = '';
 
 		const data = res.data as unknown as PhotoListResponse;
 		photos = [...photos, ...data.data];
@@ -120,6 +123,10 @@
 
 	<!-- Main content -->
 	<div class="flex-1 overflow-y-auto p-4">
+		{#if error}
+			<div class="mb-4 rounded bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+		{/if}
+
 		{#if selectedTagIds.length > 0}
 			<div class="mb-4 flex flex-wrap items-center gap-2">
 				<span class="text-xs text-gray-500">Filtering:</span>

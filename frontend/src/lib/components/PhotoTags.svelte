@@ -20,12 +20,15 @@
 	let showDropdown = $state(false);
 	let search = $state('');
 	let adding = $state(false);
+	let error = $state('');
 
 	async function loadTags() {
 		const res = await getTags();
-		if (res.data) {
-			allTags = (res.data as unknown as TagListResponse).data;
+		if (res.error) {
+			error = 'Failed to load tags';
+			return;
 		}
+		allTags = (res.data as unknown as TagListResponse).data;
 	}
 
 	function openDropdown() {
@@ -50,7 +53,9 @@
 
 	async function addTag(tagId: number) {
 		adding = true;
-		await postPhotoTags({ path: { id: photoId }, body: { tag_ids: [tagId] } });
+		error = '';
+		const res = await postPhotoTags({ path: { id: photoId }, body: { tag_ids: [tagId] } });
+		if (res.error) error = 'Failed to add tag';
 		showDropdown = false;
 		adding = false;
 		onUpdate();
@@ -58,18 +63,25 @@
 
 	async function createAndAdd() {
 		adding = true;
+		error = '';
 		const res = await postTag({ body: { name: search.trim() } });
-		if (res.data) {
-			const created = res.data as unknown as TagResponse;
-			await postPhotoTags({ path: { id: photoId }, body: { tag_ids: [created.id] } });
+		if (res.error) {
+			error = 'Failed to create tag';
+			adding = false;
+			return;
 		}
+		const created = res.data as unknown as TagResponse;
+		const assignRes = await postPhotoTags({ path: { id: photoId }, body: { tag_ids: [created.id] } });
+		if (assignRes.error) error = 'Failed to assign tag';
 		showDropdown = false;
 		adding = false;
 		onUpdate();
 	}
 
 	async function removeTag(tagId: number) {
-		await deletePhotoTag({ path: { id: photoId, tagId } });
+		error = '';
+		const res = await deletePhotoTag({ path: { id: photoId, tagId } });
+		if (res.error) error = 'Failed to remove tag';
 		onUpdate();
 	}
 
@@ -81,6 +93,10 @@
 
 <div class="space-y-2">
 	<h3 class="text-sm font-medium text-gray-900">Tags</h3>
+
+	{#if error}
+		<div class="rounded bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>
+	{/if}
 
 	<div class="flex flex-wrap gap-1.5">
 		{#each tags as tag (tag.id)}
