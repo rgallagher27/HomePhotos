@@ -34,4 +34,5 @@ type Repository interface {
 	ListAllFingerprints(ctx context.Context) (map[string]string, error)
 	ListPending(ctx context.Context, limit int) ([]Photo, error)
 	UpdateCacheStatus(ctx context.Context, id int64, status CacheStatus) error
+	ListFolders(ctx context.Context, parent string) ([]string, int, error)
 }

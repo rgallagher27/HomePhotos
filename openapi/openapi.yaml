@@ -39,6 +39,8 @@ paths:
     $ref: paths/photos_id_tags_tagid.yaml
   /api/v1/photos/bulk-tag:
     $ref: paths/photos_bulk_tag.yaml
+  /api/v1/folders:
+    $ref: paths/folders.yaml
   /api/v1/scanner/run:
     $ref: paths/scanner_run.yaml
   /api/v1/scanner/status:

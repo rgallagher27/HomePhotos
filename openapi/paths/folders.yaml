@@ -1,0 +1,22 @@
+get:
+  operationId: getFolders
+  tags:
+    - Photos
+  summary: List subfolders
+  description: List immediate subfolders at a given path level
+  parameters:
+    - name: parent
+      in: query
+      schema:
+        type: string
+        default: ""
+      description: Parent folder path (empty string for root)
+  responses:
+    '200':
+      description: List of subfolders
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/folder_list_response.yaml'
+    '401':
+      $ref: '../components/responses/401.yaml'

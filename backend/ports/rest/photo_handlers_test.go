@@ -200,6 +200,91 @@ func TestGetPhoto_IncludesTags(t *testing.T) {
 	}
 }
 
+func TestGetFolders_Empty(t *testing.T) {
+	s := testServer(t, true)
+	handler := buildHandler(t, s)
+	token := registerUser(t, handler, "admin", "password123")
+
+	resp := doRequest(t, handler, "GET", "/api/v1/folders", "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var body FolderListResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Folders) != 0 {
+		t.Errorf("folders len = %d, want 0", len(body.Folders))
+	}
+	if body.PhotoCount != 0 {
+		t.Errorf("photo_count = %d, want 0", body.PhotoCount)
+	}
+}
+
+func TestGetFolders_RootLevel(t *testing.T) {
+	env := newTestEnv(t, true)
+	handler := buildHandler(t, env.server)
+	token := registerUser(t, handler, "admin", "password123")
+
+	createTestPhotoViaRepo(t, env, "2024/summer/a.jpg")
+	createTestPhotoViaRepo(t, env, "2024/winter/b.jpg")
+	createTestPhotoViaRepo(t, env, "2025/spring/c.jpg")
+	createTestPhotoViaRepo(t, env, "root.jpg") // direct in root
+
+	resp := doRequest(t, handler, "GET", "/api/v1/folders", "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var body FolderListResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Folders) != 2 {
+		t.Fatalf("folders = %v, want [2024, 2025]", body.Folders)
+	}
+	if body.Folders[0] != "2024" || body.Folders[1] != "2025" {
+		t.Errorf("folders = %v, want [2024, 2025]", body.Folders)
+	}
+	if body.PhotoCount != 1 {
+		t.Errorf("photo_count = %d, want 1 (root.jpg)", body.PhotoCount)
+	}
+}
+
+func TestGetFolders_Nested(t *testing.T) {
+	env := newTestEnv(t, true)
+	handler := buildHandler(t, env.server)
+	token := registerUser(t, handler, "admin", "password123")
+
+	createTestPhotoViaRepo(t, env, "2024/summer/a.jpg")
+	createTestPhotoViaRepo(t, env, "2024/winter/b.jpg")
+	createTestPhotoViaRepo(t, env, "2024/direct.jpg") // direct in 2024/
+
+	resp := doRequest(t, handler, "GET", "/api/v1/folders?parent=2024", "", token)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+
+	var body FolderListResponse
+	json.NewDecoder(resp.Body).Decode(&body)
+	if len(body.Folders) != 2 {
+		t.Fatalf("folders = %v, want [summer, winter]", body.Folders)
+	}
+	if body.Folders[0] != "summer" || body.Folders[1] != "winter" {
+		t.Errorf("folders = %v, want [summer, winter]", body.Folders)
+	}
+	if body.PhotoCount != 1 {
+		t.Errorf("photo_count = %d, want 1 (direct.jpg)", body.PhotoCount)
+	}
+}
+
+func TestGetFolders_Unauthenticated(t *testing.T) {
+	s := testServer(t, true)
+	handler := buildHandler(t, s)
+
+	resp := doRequest(t, handler, "GET", "/api/v1/folders", "", "")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", resp.StatusCode)
+	}
+}
+
 func TestGetPhotos_IncludesTagsInListItems(t *testing.T) {
 	env := newTestEnv(t, true)
 	handler := buildHandler(t, env.server)

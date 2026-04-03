@@ -105,6 +105,37 @@ func (s *Server) GetPhotos(w http.ResponseWriter, r *http.Request, params GetPho
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
+func (s *Server) GetFolders(w http.ResponseWriter, r *http.Request, params GetFoldersParams) {
+	authUser := UserFromContext(r.Context())
+	if authUser == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	parent := ""
+	if params.Parent != nil {
+		parent = *params.Parent
+	}
+
+	folders, count, err := s.photos.ListFolders(r.Context(), parent)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list folders")
+		return
+	}
+
+	if folders == nil {
+		folders = []string{}
+	}
+
+	resp := FolderListResponse{
+		Folders:    folders,
+		PhotoCount: count,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
 func (s *Server) GetPhoto(w http.ResponseWriter, r *http.Request, id int64) {
 	authUser := UserFromContext(r.Context())
 	if authUser == nil {

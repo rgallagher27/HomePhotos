@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { PhotoListItem } from '$lib/api/gen/types.gen';
 	import PhotoCard from './PhotoCard.svelte';
+	import VirtualGroup from './VirtualGroup.svelte';
 
 	let {
 		photos,
 		hasMore,
 		loading,
 		groupBy = 'date',
+		grouped = true,
 		onLoadMore,
 		onPhotoClick
 	}: {
@@ -14,6 +16,7 @@
 		hasMore: boolean;
 		loading: boolean;
 		groupBy?: 'date' | 'folder';
+		grouped?: boolean;
 		onLoadMore: () => void;
 		onPhotoClick: (photo: PhotoListItem) => void;
 	} = $props();
@@ -85,16 +88,26 @@
 </script>
 
 <div class="space-y-6">
-	{#each groups as group (group.key)}
-		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-500">{group.label}</h3>
-			<div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-1">
-				{#each group.photos as photo (photo.id)}
-					<PhotoCard {photo} onclick={() => onPhotoClick(photo)} />
-				{/each}
-			</div>
-		</section>
-	{/each}
+	{#if grouped}
+		{#each groups as group (group.key)}
+			<VirtualGroup>
+				<section>
+					<h3 class="mb-2 text-sm font-medium text-gray-500">{group.label}</h3>
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-1">
+						{#each group.photos as photo (photo.id)}
+							<PhotoCard {photo} onclick={() => onPhotoClick(photo)} />
+						{/each}
+					</div>
+				</section>
+			</VirtualGroup>
+		{/each}
+	{:else}
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-1">
+			{#each photos as photo (photo.id)}
+				<PhotoCard {photo} onclick={() => onPhotoClick(photo)} />
+			{/each}
+		</div>
+	{/if}
 
 	{#if loading}
 		<div class="flex justify-center py-4">

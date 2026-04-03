@@ -563,6 +563,29 @@ paths:
           $ref: '#/components/responses/400'
         '401':
           $ref: '#/components/responses/401'
+  /api/v1/folders:
+    get:
+      operationId: getFolders
+      tags:
+        - Photos
+      summary: List subfolders
+      description: List immediate subfolders at a given path level
+      parameters:
+        - name: parent
+          in: query
+          schema:
+            type: string
+            default: ''
+          description: Parent folder path (empty string for root)
+      responses:
+        '200':
+          description: List of subfolders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/folder_list_response'
+        '401':
+          $ref: '#/components/responses/401'
   /api/v1/scanner/run:
     post:
       operationId: postScannerRun
@@ -1008,6 +1031,20 @@ components:
           items:
             type: integer
             format: int64
+    folder_list_response:
+      type: object
+      required:
+        - folders
+        - photo_count
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+          description: Immediate subfolder names at this level
+        photo_count:
+          type: integer
+          description: Number of photos directly in this folder (not in subfolders)
     scanner_run_response:
       type: object
       required:

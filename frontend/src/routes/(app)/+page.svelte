@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { PhotoListItem, PhotoListResponse } from '$lib/api/gen/types.gen';
-	import { getPhotos } from '$lib/api/gen/sdk.gen';
+	import type { PhotoListItem, PhotoListResponse, FolderListResponse } from '$lib/api/gen/types.gen';
+	import { getPhotos, getFolders } from '$lib/api/gen/sdk.gen';
 	import PhotoGrid from '$lib/components/PhotoGrid.svelte';
 	import TagSidebar from '$lib/components/TagSidebar.svelte';
 	import TagChip from '$lib/components/TagChip.svelte';
+	import FolderBreadcrumb from '$lib/components/FolderBreadcrumb.svelte';
+	import FolderGrid from '$lib/components/FolderGrid.svelte';
 	import { setPhotoNav } from '$lib/photoNav.svelte';
 
 	let photos: PhotoListItem[] = $state([]);
@@ -17,15 +19,38 @@
 	let selectedTagIds: number[] = $state([]);
 	let tagMode: 'and' | 'or' = $state('or');
 	let sidebarOpen = $state(false);
-	let groupBy: 'date' | 'folder' = $state('date');
+	let groupBy = $state<'date' | 'folder'>('date');
+
+	// Folder browsing state
+	let currentFolder = $state('');
+	let subfolders: string[] = $state([]);
+	let folderPhotoCount = $state(0);
+
+	const isFolderMode = $derived(groupBy === 'folder');
+
+	async function loadFolders() {
+		const res = await getFolders({ query: { parent: currentFolder } });
+		if (res.error) return;
+		const data = res.data as unknown as FolderListResponse;
+		subfolders = data.folders;
+		folderPhotoCount = data.photo_count;
+	}
 
 	async function loadMore() {
 		if (loading || !hasMore) return;
 		loading = true;
 
-		const sort = groupBy === 'folder' ? 'file_path' : 'captured_at';
-		const order = groupBy === 'folder' ? 'asc' : 'desc';
-		const query: Record<string, unknown> = { limit: 50, sort, order };
+		const query: Record<string, unknown> = { limit: 50 };
+
+		if (isFolderMode) {
+			query.sort = 'file_name';
+			query.order = 'asc';
+			if (currentFolder) query.folder = currentFolder;
+		} else {
+			query.sort = 'captured_at';
+			query.order = 'desc';
+		}
+
 		if (cursor) query.cursor = cursor;
 		if (selectedTagIds.length > 0) {
 			query.tags = selectedTagIds.join(',');
@@ -52,6 +77,7 @@
 		photos = [];
 		cursor = null;
 		hasMore = true;
+		if (isFolderMode) loadFolders();
 		loadMore();
 	}
 
@@ -77,6 +103,20 @@
 	function setGroupBy(mode: 'date' | 'folder') {
 		if (groupBy === mode) return;
 		groupBy = mode;
+		if (mode === 'date') {
+			currentFolder = '';
+			subfolders = [];
+		}
+		resetAndLoad();
+	}
+
+	function navigateToFolder(path: string) {
+		currentFolder = path;
+		resetAndLoad();
+	}
+
+	function handleFolderClick(name: string) {
+		currentFolder = currentFolder ? currentFolder + '/' + name : name;
 		resetAndLoad();
 	}
 
@@ -86,7 +126,7 @@
 	}
 
 	onMount(() => {
-		loadMore();
+		resetAndLoad();
 	});
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -141,17 +181,17 @@
 	<!-- Main content -->
 	<div class="flex-1 overflow-y-auto p-4">
 		<div class="mb-4 flex items-center gap-1 text-sm">
-			<span class="text-xs text-gray-500 mr-1">Group by:</span>
+			<span class="text-xs text-gray-500 mr-1">View:</span>
 			<button
 				type="button"
 				onclick={() => setGroupBy('date')}
 				class="rounded px-2 py-1 {groupBy === 'date' ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-500 hover:text-gray-700'}"
-			>Date</button>
+			>Timeline</button>
 			<button
 				type="button"
 				onclick={() => setGroupBy('folder')}
 				class="rounded px-2 py-1 {groupBy === 'folder' ? 'bg-gray-200 font-medium text-gray-900' : 'text-gray-500 hover:text-gray-700'}"
-			>Folder</button>
+			>Folders</button>
 		</div>
 
 		{#if error}
@@ -170,6 +210,15 @@
 			</div>
 		{/if}
 
-		<PhotoGrid {photos} {hasMore} {loading} {groupBy} onLoadMore={loadMore} onPhotoClick={handlePhotoClick} />
+		{#if isFolderMode}
+			<div class="mb-4">
+				<FolderBreadcrumb path={currentFolder} onNavigate={navigateToFolder} />
+			</div>
+			<div class="mb-4">
+				<FolderGrid folders={subfolders} onFolderClick={handleFolderClick} />
+			</div>
+		{/if}
+
+		<PhotoGrid {photos} {hasMore} {loading} {groupBy} grouped={!isFolderMode} onLoadMore={loadMore} onPhotoClick={handlePhotoClick} />
 	</div>
 </div>

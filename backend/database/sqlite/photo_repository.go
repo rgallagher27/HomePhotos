@@ -326,6 +326,55 @@ func (r *PhotoRepository) List(ctx context.Context, params photo.ListParams) (*p
 	}, nil
 }
 
+func (r *PhotoRepository) ListFolders(ctx context.Context, parent string) ([]string, int, error) {
+	// Build the prefix: for root ("") we match from the start, otherwise "parent/"
+	prefix := parent
+	if prefix != "" {
+		prefix += "/"
+	}
+	prefixLen := len(prefix)
+
+	// Get distinct immediate subfolders
+	folderRows, err := r.db.QueryContext(ctx,
+		`SELECT DISTINCT SUBSTR(file_path, ?+1, INSTR(SUBSTR(file_path, ?+1), '/') - 1) AS folder_name
+		FROM photos
+		WHERE file_path LIKE ? || '%'
+		  AND INSTR(SUBSTR(file_path, ?+1), '/') > 0
+		ORDER BY folder_name ASC`,
+		prefixLen, prefixLen, prefix, prefixLen)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list folders: %w", err)
+	}
+	defer folderRows.Close()
+
+	var folders []string
+	for folderRows.Next() {
+		var name string
+		if err := folderRows.Scan(&name); err != nil {
+			return nil, 0, fmt.Errorf("scan folder: %w", err)
+		}
+		if name != "" {
+			folders = append(folders, name)
+		}
+	}
+	if err := folderRows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("folder rows: %w", err)
+	}
+
+	// Count photos directly in this folder (no subfolder)
+	var count int
+	err = r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM photos
+		WHERE file_path LIKE ? || '%'
+		  AND INSTR(SUBSTR(file_path, ?+1), '/') = 0`,
+		prefix, prefixLen).Scan(&count)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count direct photos: %w", err)
+	}
+
+	return folders, count, nil
+}
+
 func rowToPhoto(row Photo) *photo.Photo {
 	return &photo.Photo{
 		ID:           row.ID,

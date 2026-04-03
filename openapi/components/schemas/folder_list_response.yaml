@@ -1,0 +1,13 @@
+type: object
+required:
+  - folders
+  - photo_count
+properties:
+  folders:
+    type: array
+    items:
+      type: string
+    description: Immediate subfolder names at this level
+  photo_count:
+    type: integer
+    description: Number of photos directly in this folder (not in subfolders)
