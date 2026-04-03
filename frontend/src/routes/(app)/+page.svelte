@@ -77,7 +77,13 @@
 	onMount(() => {
 		loadMore();
 	});
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && sidebarOpen) sidebarOpen = false;
+	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="flex h-[calc(100vh-49px)]">
 	<!-- Mobile sidebar toggle -->
@@ -99,12 +105,12 @@
 
 	<!-- Mobile backdrop -->
 	{#if sidebarOpen}
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="fixed inset-0 z-20 bg-black/30 lg:hidden"
+		<button
+			type="button"
+			class="fixed inset-0 z-20 bg-black/30 lg:hidden cursor-default"
 			onclick={() => (sidebarOpen = false)}
-			onkeydown={(e) => { if (e.key === 'Escape') sidebarOpen = false; }}
-		></div>
+			aria-label="Close sidebar"
+		></button>
 	{/if}
 
 	<!-- Sidebar -->

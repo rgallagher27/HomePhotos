@@ -136,8 +136,10 @@
 				disabled={adding}
 				class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			/>
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
+				role="listbox"
+				tabindex="-1"
+				aria-label="Available tags"
 				class="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded border border-gray-200 bg-white shadow-lg"
 				onmousedown={(e) => e.preventDefault()}
 			>
