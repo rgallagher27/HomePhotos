@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 )
@@ -23,9 +24,10 @@ func (s *Server) PostScannerRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Start scan in background
+	// Start scan in background — use Background context since r.Context()
+	// is cancelled when the HTTP response completes.
 	go func() {
-		_ = s.scanner.Run(r.Context())
+		_ = s.scanner.Run(context.Background())
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
@@ -54,5 +56,10 @@ func (s *Server) GetScannerStatus(w http.ResponseWriter, r *http.Request) {
 		Processed:  status.Processed,
 		Errors:     status.Errors,
 		StartedAt:  status.StartedAt,
+		Added:      status.Added,
+		Updated:    status.Updated,
+		Unchanged:  status.Unchanged,
+		Deleted:    status.Deleted,
+		Skipped:    status.Skipped,
 	})
 }

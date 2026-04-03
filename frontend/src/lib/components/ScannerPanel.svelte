@@ -87,7 +87,7 @@
 				</span>
 			</div>
 
-			{#if status.total_files > 0}
+			{#if running && status.total_files > 0}
 				<div>
 					<div class="flex justify-between text-sm text-gray-500 mb-1">
 						<span>{status.processed} / {status.total_files}</span>
@@ -110,6 +110,22 @@
 				<p class="text-xs text-gray-400">
 					Started: {new Date(status.started_at).toLocaleString()}
 				</p>
+			{/if}
+
+			{#if !running && status.started_at}
+				<div class="rounded bg-gray-50 px-4 py-3 text-sm text-gray-700 space-y-1">
+					<p class="font-medium">Last scan results</p>
+					<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+						<span>{status.added} new</span>
+						<span>{status.updated} updated</span>
+						<span>{status.unchanged} unchanged</span>
+						<span>{status.deleted} removed</span>
+						<span>{status.errors} error(s)</span>
+					</div>
+					{#if status.skipped > 0}
+						<p class="text-xs text-amber-600">{status.skipped} file(s) skipped (zero-byte)</p>
+					{/if}
+				</div>
 			{/if}
 		</div>
 	{/if}

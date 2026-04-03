@@ -13,7 +13,13 @@
       "Bash(npx --yes sv create frontend --template minimal --types ts)",
       "Bash(npx:*)",
       "Bash(npm install:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(go test:*)",
+      "Bash(make generate:*)",
+      "Bash(make db/migrate/create name=AddUsersTable)",
+      "Bash(make generate/sqlite)",
+      "Bash(make lint:*)",
+      "Bash(cat:*)"
     ]
   }
 }

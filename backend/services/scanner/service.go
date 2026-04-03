@@ -34,6 +34,23 @@ type Status struct {
 	Processed  int        `json:"processed"`
 	Errors     int        `json:"errors"`
 	StartedAt  *time.Time `json:"started_at"`
+	// Result fields — populated on completion, persist until next scan
+	Added     int `json:"added"`
+	Updated   int `json:"updated"`
+	Unchanged int `json:"unchanged"`
+	Deleted   int `json:"deleted"`
+	Skipped   int `json:"skipped"`
+}
+
+type scanResult struct {
+	TotalFiles int
+	Processed  int
+	Errors     int
+	Added      int
+	Updated    int
+	Unchanged  int
+	Deleted    int
+	Skipped    int
 }
 
 type Service struct {
@@ -48,7 +65,7 @@ func New(photos photo.Repository, sourcePath string) *Service {
 		photos:     photos,
 		sourcePath: sourcePath,
 	}
-	s.status.Store(idleStatus())
+	s.status.Store(Status{State: "idle"})
 	return s
 }
 
@@ -67,12 +84,24 @@ func (s *Service) Run(ctx context.Context) error {
 		State:     "scanning",
 		StartedAt: &now,
 	})
-	defer s.status.Store(idleStatus())
 
-	return s.scan(ctx)
+	result, err := s.scan(ctx)
+	s.status.Store(Status{
+		State:      "idle",
+		StartedAt:  &now,
+		TotalFiles: result.TotalFiles,
+		Processed:  result.Processed,
+		Errors:     result.Errors,
+		Added:      result.Added,
+		Updated:    result.Updated,
+		Unchanged:  result.Unchanged,
+		Deleted:    result.Deleted,
+		Skipped:    result.Skipped,
+	})
+	return err
 }
 
-func (s *Service) scan(ctx context.Context) error {
+func (s *Service) scan(ctx context.Context) (scanResult, error) {
 	// Discover files
 	type fileInfo struct {
 		relPath string
@@ -82,6 +111,7 @@ func (s *Service) scan(ctx context.Context) error {
 	}
 
 	var files []fileInfo
+	var skipped int
 	err := filepath.WalkDir(s.sourcePath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip errors
@@ -104,6 +134,12 @@ func (s *Service) scan(ctx context.Context) error {
 			return nil
 		}
 
+		if info.Size() == 0 {
+			slog.Warn("skipping zero-byte file", "path", path)
+			skipped++
+			return nil
+		}
+
 		relPath, err := filepath.Rel(s.sourcePath, path)
 		if err != nil {
 			return nil
@@ -118,7 +154,7 @@ func (s *Service) scan(ctx context.Context) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("walk source: %w", err)
+		return scanResult{Skipped: skipped}, fmt.Errorf("walk source: %w", err)
 	}
 
 	s.status.Store(Status{
@@ -130,17 +166,23 @@ func (s *Service) scan(ctx context.Context) error {
 	// Load existing fingerprints
 	existing, err := s.photos.ListAllFingerprints(ctx)
 	if err != nil {
-		return fmt.Errorf("list fingerprints: %w", err)
+		return scanResult{Skipped: skipped}, fmt.Errorf("list fingerprints: %w", err)
 	}
 
 	// Process files
 	activePaths := make([]string, 0, len(files))
 	processed := 0
 	scanErrors := 0
+	added := 0
+	updated := 0
+	unchanged := 0
 
 	for _, f := range files {
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return scanResult{
+				TotalFiles: len(files), Processed: processed, Errors: scanErrors,
+				Added: added, Updated: updated, Unchanged: unchanged, Skipped: skipped,
+			}, ctx.Err()
 		}
 
 		activePaths = append(activePaths, f.relPath)
@@ -148,6 +190,7 @@ func (s *Service) scan(ctx context.Context) error {
 
 		if existingFP, exists := existing[f.relPath]; exists && existingFP == fingerprint {
 			// Unchanged — skip
+			unchanged++
 			processed++
 			s.updateProgress(processed, scanErrors)
 			continue
@@ -173,6 +216,8 @@ func (s *Service) scan(ctx context.Context) error {
 			if err := s.photos.Update(ctx, existingPhoto); err != nil {
 				slog.Warn("update photo", "path", f.relPath, "error", err)
 				scanErrors++
+			} else {
+				updated++
 			}
 		} else {
 			// Create new
@@ -189,6 +234,8 @@ func (s *Service) scan(ctx context.Context) error {
 			if _, err := s.photos.Create(ctx, p); err != nil {
 				slog.Warn("create photo", "path", f.relPath, "error", err)
 				scanErrors++
+			} else {
+				added++
 			}
 		}
 
@@ -197,16 +244,29 @@ func (s *Service) scan(ctx context.Context) error {
 	}
 
 	// Remove orphaned records
+	var deletedCount int
 	if len(activePaths) > 0 || len(existing) > 0 {
 		deleted, err := s.photos.DeleteOrphaned(ctx, activePaths)
 		if err != nil {
 			slog.Warn("delete orphaned photos", "error", err)
-		} else if deleted > 0 {
-			slog.Info("removed orphaned photos", "count", deleted)
+		} else {
+			deletedCount = int(deleted)
+			if deleted > 0 {
+				slog.Info("removed orphaned photos", "count", deleted)
+			}
 		}
 	}
 
-	return nil
+	return scanResult{
+		TotalFiles: len(files),
+		Processed:  processed,
+		Errors:     scanErrors,
+		Added:      added,
+		Updated:    updated,
+		Unchanged:  unchanged,
+		Deleted:    deletedCount,
+		Skipped:    skipped,
+	}, nil
 }
 
 func (s *Service) updateProgress(processed, errors int) {
@@ -261,6 +321,3 @@ func applyEXIF(p *photo.Photo, e *EXIFData) {
 	p.GPSLongitude = e.GPSLongitude
 }
 
-func idleStatus() Status {
-	return Status{State: "idle"}
-}

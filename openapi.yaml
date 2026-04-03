@@ -1021,6 +1021,11 @@ components:
         - total_files
         - processed
         - errors
+        - added
+        - updated
+        - unchanged
+        - deleted
+        - skipped
       properties:
         status:
           type: string
@@ -1034,6 +1039,16 @@ components:
           type: string
           format: date-time
           nullable: true
+        added:
+          type: integer
+        updated:
+          type: integer
+        unchanged:
+          type: integer
+        deleted:
+          type: integer
+        skipped:
+          type: integer
   responses:
     '400':
       description: Bad request
