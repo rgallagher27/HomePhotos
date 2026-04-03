@@ -20,7 +20,7 @@ import (
 )
 
 func NewRestServer(ctx context.Context, cfg config.Config) (*http.Server, *scanner.Service, *cache.Service, error) {
-	db, err := sqlite.Open(cfg.DBPath)
+	db, err := sqlite.OpenAndMigrate(cfg.DBPath)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("open database: %w", err)
 	}
